@@ -1,0 +1,13 @@
+pyenv/
+.venv/
+venv/
+__pycache__/
+.python-version
+*.pyc
+.coverage
+.env
+.env.*
+venv
+env/
+make_black_before_pushing_to_github
+tasks.py
