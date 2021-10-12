@@ -7,6 +7,9 @@ formatted_code := app/ migrations/
 
 .ONESHELL:
 
+rev_id = ""
+migration_message = ""
+
 requirements.txt:
 	pip-compile --generate-hashes --output-file=requirements.txt requirements.in
 
@@ -34,8 +37,13 @@ push:
 	docker push $(docker_username)/$(docker_image):latest
 
 # TODO: This should have variables to pass to it.
-generate-migrations:
-	alembic revision --autogenerate --rev-id "0001" -m "users theses and posts"
+migration:
+	if [ -z $(rev_id)] || [ -z $(migration_message)]; \
+	then \
+		echo -e "\n\nmake migration requires both a rev_id and a migration_message.\nExample usage: make migration rev_id=0001 migration_message=\"my message\"\n\n"; \
+	else \
+		alembic revision --autogenerate --rev-id "$(rev_id)" -m "$(migration_message)"; \
+	fi
 
 migrate:
 	alembic upgrade head
