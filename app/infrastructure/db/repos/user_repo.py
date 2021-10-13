@@ -7,7 +7,6 @@ from app.usecases.interfaces.user_repo import IUserRepo
 from app.usecases.schemas import users
 
 
-
 class UsersRepo(IUserRepo):
     def __init__(self, db: Database):
         self.db = db
@@ -40,7 +39,6 @@ class UsersRepo(IUserRepo):
         #     raise Exception(
         #         "Please pass a parameter to query by to the function, retrieve_user_with_filter()"
         #     )
-
 
 
 # PRINT OUT THE USERS OBJECT AND RIGHT SQL DIRECTLY

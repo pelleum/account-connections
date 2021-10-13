@@ -17,7 +17,7 @@ INSTITUTIONS = sa.Table(
         server_default=sa.func.now(),
         server_onupdate=sa.func.now(),
     ),
-    schema="account-connections"
+    schema="account-connections",
 )
 
 
@@ -50,5 +50,5 @@ INSTITUTION_CONNECTIONS = sa.Table(
         server_default=sa.func.now(),
         server_onupdate=sa.func.now(),
     ),
-    schema="account-connections"
+    schema="account-connections",
 )

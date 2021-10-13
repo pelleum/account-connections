@@ -12,7 +12,10 @@ load_dotenv()
 
 # Import Tables
 from app.infrastructure.db.metadata import METADATA
-from app.infrastructure.db.models.institutions import INSTITUTIONS, INSTITUTION_CONNECTIONS
+from app.infrastructure.db.models.institutions import (
+    INSTITUTIONS,
+    INSTITUTION_CONNECTIONS,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -55,6 +58,7 @@ def run_migrations_offline():
     with context.begin_transaction():
         context.run_migrations()
 
+
 def include_object(object, name, type_, reflected, compare_to):
     if type_ == "table" and object.schema != getenv("SCHEMA"):
         return False
@@ -74,9 +78,15 @@ def run_migrations_online():
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
-    
+
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata, include_schemas=True, version_table_schema=getenv("SCHEMA"), include_object=include_object)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            include_schemas=True,
+            version_table_schema=getenv("SCHEMA"),
+            include_object=include_object,
+        )
 
         with context.begin_transaction():
             context.run_migrations()

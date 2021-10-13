@@ -1,5 +1,3 @@
-
-
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from fastapi import Depends
@@ -44,5 +42,3 @@ async def get_current_active_user(current_user: UserInDB = Depends(get_current_u
     if not current_user.is_active:
         raise pelleum_errors.inactive_user_error
     return current_user
-
-

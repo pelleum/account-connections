@@ -6,9 +6,9 @@ import click
 from app.infrastructure.web.endpoints.private import example as example_private
 from app.infrastructure.web.endpoints import health
 from app.dependencies import get_event_loop, get_client_session
-#This line must be imported after app.dependencies to avoid a circular import (dependencies calls get_user_repo, which depends on get_or_create_database).
-from app.infrastructure.db.core import get_or_create_database
 
+# This line must be imported after app.dependencies to avoid a circular import (dependencies calls get_user_repo, which depends on get_or_create_database).
+from app.infrastructure.db.core import get_or_create_database
 
 
 from app.settings import settings
@@ -19,7 +19,7 @@ def setup_app():
         title="Account Connections API",
         description="The following are endpoints for the Pelleum account-connections service.",
     )
-    
+
     app.include_router(example_private.example_private_router, prefix="/private")
     app.include_router(health.health_router, prefix="/health")
 
