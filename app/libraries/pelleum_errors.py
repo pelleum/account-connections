@@ -16,7 +16,7 @@ invalid_credentials = HTTPException(
 inactive_user_error = HTTPException(status_code=400, detail="Inactive user")
 
 
-class AccountAlreadyExists:
+class PelleumErrors:
     def __init__(self, detail: str = None):
         self.detail = detail
 
@@ -28,32 +28,17 @@ class AccountAlreadyExists:
             else "An account with this username or email already exists.",
         )
 
-
-class PasswordValidationError:
-    def __init__(self, detail: str = None):
-        self.detail = detail
-
     async def invalid_password(self):
         return HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=self.detail if self.detail else "The submitted password is invalid.",
         )
 
-
-class EmailValidationError:
-    def __init__(self, detail: str = None):
-        self.detail = detail
-
     async def invalid_email(self):
         return HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=self.detail if self.detail else "The submitted email is invalid.",
         )
-
-
-class InvalidResourceId:
-    def __init__(self, detail: str = None):
-        self.detail = detail
 
     async def invalid_resource_id(self):
         return HTTPException(
@@ -63,17 +48,32 @@ class InvalidResourceId:
             else "The supplied resource ID is invalid.",
         )
 
-
-class UniqueConstraint:
-    def __init__(self, detail: str = None):
-        self.detail = detail
-
     async def unique_constraint(self):
         return HTTPException(
             status_code=status.HTTP_409_CONFLICT,
+            detail=self.detail if self.detail else "This resource already exists.",
+        )
+
+    async def client_error(self):
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=self.detail if self.detail else "There was an client error.",
+        )
+
+    async def general_error(self):
+        return HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=self.detail
             if self.detail
-            else "The supplied resource ID is invalid.",
+            else "There was an internal server error.",
+        )
+
+    async def account_connection_error(self):
+        return HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=self.detail
+            if self.detail
+            else "There was an external account connection error.",
         )
 
 
@@ -86,3 +86,14 @@ array_too_long = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
     detail="The maximum amount of supporting sources is 10.",
 )
+
+
+class ExternalError:
+    def __init__(self, detail: str = None):
+        self.detail = detail
+
+    async def robinhood(self):
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=self.detail if self.detail else "The supplied mfa code is invalid.",
+        )

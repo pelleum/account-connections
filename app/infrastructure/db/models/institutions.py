@@ -17,7 +17,7 @@ INSTITUTIONS = sa.Table(
         server_default=sa.func.now(),
         server_onupdate=sa.func.now(),
     ),
-    schema="account-connections",
+    schema="account_connections",
 )
 
 
@@ -28,7 +28,7 @@ INSTITUTION_CONNECTIONS = sa.Table(
     sa.Column(
         "institution_id",
         sa.String,
-        sa.ForeignKey("account-connections.institutions.institution_id"),
+        sa.ForeignKey("account_connections.institutions.institution_id"),
         index=True,
     ),
     sa.Column(
@@ -50,5 +50,9 @@ INSTITUTION_CONNECTIONS = sa.Table(
         server_default=sa.func.now(),
         server_onupdate=sa.func.now(),
     ),
-    schema="account-connections",
+    schema="account_connections",
+)
+
+sa.UniqueConstraint(
+    INSTITUTION_CONNECTIONS.c.user_id, INSTITUTION_CONNECTIONS.c.institution_id
 )

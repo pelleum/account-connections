@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     environment: str = "unknown"
     log_level: str = "info"
     server_host: str = "0.0.0.0"
-    server_port: int = 8000
+    server_port: int
     server_prefix: str = ""
 
     database_url: str
@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     token_url: str
     json_web_token_secret: str
     json_web_token_algorithm: str
+
+    robinhood_client_id: str
+    robinhood_device_token: str
 
     class Config:
         env_file = DOTENV_FILE

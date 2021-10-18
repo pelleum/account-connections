@@ -2,7 +2,7 @@ from fastapi import FastAPI
 import uvicorn
 import click
 
-
+from app.infrastructure.web.endpoints.public import institutions
 from app.infrastructure.web.endpoints.private import example as example_private
 from app.infrastructure.web.endpoints import health
 from app.dependencies import get_event_loop, get_client_session
@@ -19,7 +19,7 @@ def setup_app():
         title="Account Connections API",
         description="The following are endpoints for the Pelleum account-connections service.",
     )
-
+    app.include_router(institutions.institution_router, prefix="/public/institutions")
     app.include_router(example_private.example_private_router, prefix="/private")
     app.include_router(health.health_router, prefix="/health")
 
