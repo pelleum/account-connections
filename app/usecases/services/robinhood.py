@@ -1,4 +1,9 @@
 from typing import Mapping
+from base64 import b64encode, b64decode
+
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+
 
 from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
 from app.usecases.interfaces.services.institution_service import IInstitutionService
@@ -100,11 +105,28 @@ class RobinhoodService(IInstitutionService):
     ) -> None:
         """Saves user's Robinhood credentials in our database"""
 
+        encrypted_json_web_token: str = await self.encrypt(
+            secret=successful_login_response.access_token
+        )
+        encrypted_refresh_token: str = await self.encrypt(
+            secret=successful_login_response.refresh_token
+        )
+
         await self._insitution_repo.create(
             connection_data=institutions.CreateConnectionRepoAdapter(
                 institution_id=institution_id,
                 user_id=user_id,
-                json_web_token=successful_login_response.access_token,
-                refresh_token=successful_login_response.refresh_token,
+                json_web_token=encrypted_json_web_token,
+                refresh_token=encrypted_refresh_token,
             )
         )
+
+    async def encrypt(self, secret: str) -> str:
+        """Returns encrypted secret"""
+
+        encryption_secret_key = b64decode(settings.encryption_secret_key.encode())
+        cipher = AES.new(encryption_secret_key, AES.MODE_CBC)
+        iv_string = b64encode(cipher.iv).decode("utf-8")
+        encypted_bytes = cipher.encrypt(pad(secret.encode(), AES.block_size))
+        enrypted_secret_string = b64encode(encypted_bytes).decode("utf-8")
+        return enrypted_secret_string + iv_string
