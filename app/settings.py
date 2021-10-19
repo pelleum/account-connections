@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     robinhood_client_id: str
     robinhood_device_token: str
 
+    encryption_secret_key: str
+
     class Config:
         env_file = DOTENV_FILE
 
