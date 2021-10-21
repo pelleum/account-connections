@@ -1,3 +1,4 @@
+# NOTE: This model is currenly just mirroring the users model constructed in the service, pelleum-api
 import sqlalchemy as sa
 from app.infrastructure.db.metadata import METADATA
 

@@ -4,6 +4,7 @@ import aiohttp
 
 from app.usecases.interfaces.services.institution_service import IInstitutionService
 from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
+from app.usecases.services.encryption import EncryptionService
 from app.usecases.schemas import institutions
 from app.usecases.services.robinhood import RobinhoodService
 from app.infrastructure.clients.robinhood import RobinhoodClient
@@ -30,4 +31,5 @@ async def get_institution_service(
         return RobinhoodService(
             robinhood_client=RobinhoodClient(client_session=client_session),
             institution_repo=institution_repo,
+            encryption_service=EncryptionService(),
         )

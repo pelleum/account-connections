@@ -89,6 +89,14 @@ class InstitutionConnection(CreateConnectionRepoAdapter):
     updated_at: datetime
 
 
+class InstitutionConnectionJoinInstitution(InstitutionConnection):
+    name: str = Field(
+        ...,
+        description="The name of a Pelleum supported financial institution.",
+        example="098736bd-fd4a-4414-bb27-bc4c87f74e0c",
+    )
+
+
 class Institution(BaseModel):
     """Database Model"""
 

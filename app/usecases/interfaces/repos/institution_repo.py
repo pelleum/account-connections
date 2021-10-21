@@ -9,7 +9,7 @@ class IInstitutionRepo(ABC):
     async def create(
         self, connection_data: institutions.CreateConnectionRepoAdapter
     ) -> None:
-        """Create reaction"""
+        """Create connection data"""
 
     @abstractmethod
     async def retrieve_institution(
@@ -34,3 +34,13 @@ class IInstitutionRepo(ABC):
         updated_connection: institutions.UpdateConnectionRepoAdapter,
     ) -> None:
         """Update a signle user-institution connection by connection_id"""
+
+    @abstractmethod
+    async def retrieve_many_institution_connections(
+        self,
+        user_id: int = None,
+        institution_id: int = None,
+        page_number: int = 1,
+        page_size: int = 200,
+    ) -> List[institutions.InstitutionConnection]:
+        """Retrieve many institution connections"""

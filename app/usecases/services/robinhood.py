@@ -1,12 +1,8 @@
 from typing import Mapping
-from base64 import b64encode, b64decode
-
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad
-
 
 from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
 from app.usecases.interfaces.services.institution_service import IInstitutionService
+from app.usecases.interfaces.services.encryption_service import IEncryptionService
 from app.usecases.interfaces.clients.robinhood import IRobinhoodClient
 from app.usecases.schemas import institutions
 from app.usecases.schemas import robinhood
@@ -16,10 +12,15 @@ from app.libraries import pelleum_errors
 
 class RobinhoodService(IInstitutionService):
     def __init__(
-        self, robinhood_client: IRobinhoodClient, institution_repo: IInstitutionRepo
+        self,
+        robinhood_client: IRobinhoodClient,
+        institution_repo: IInstitutionRepo,
+        encryption_service: IEncryptionService,
     ):
         self.robinhood_client = robinhood_client
         self._insitution_repo = institution_repo
+        self.encryption_service = encryption_service
+        self.institution_name = "Robinhood"
 
     async def login(
         self,
@@ -97,6 +98,50 @@ class RobinhoodService(IInstitutionService):
                 institution_id=institution_id,
             )
 
+    async def get_recent_holdings(
+        self, encrypted_json_web_token
+    ) -> robinhood.RobinhoodUserHoldings:
+        """Returns most recent holdings directly from Robinhood"""
+
+        json_web_token = await self.encryption_service.decrypt(
+            encrypted_secret=encrypted_json_web_token
+        )
+
+        user_holdings = []
+
+        # 1. Retrieve positions dictionary
+        positions_data: robinhood.PositionDataResponse = (
+            await self.robinhood_client.get_postitions_data(access_token=json_web_token)
+        )
+
+        # 2. For each position, get the asset's ticker symbol
+        for position in positions_data.results:
+            instrument_data: robinhood.InstrumentByURLResponse = (
+                await self.robinhood_client.get_instrument_by_url(
+                    url=position.instrument, access_token=json_web_token
+                )
+            )
+            ticker_symbol = instrument_data.symbol
+
+            # 3. Get asset name by its ticker symbol
+            name_data: robinhood.NameDataResponse = (
+                await self.robinhood_client.get_name_by_symbol(
+                    symbol=ticker_symbol, access_token=json_web_token
+                )
+            )
+            asset_name = name_data.results[0].name
+
+            user_holdings.append(
+                robinhood.RobhinhoodIndividualHoldingData(
+                    asset_symbol=ticker_symbol,
+                    quantity=position.quantity,
+                    average_by_price=position.average_buy_price,
+                    asset_name=asset_name,
+                )
+            )
+
+        return robinhood.RobinhoodUserHoldings(holdings=user_holdings)
+
     async def save_credentials(
         self,
         successful_login_response: robinhood.SuccessfulLoginResponse,
@@ -105,10 +150,10 @@ class RobinhoodService(IInstitutionService):
     ) -> None:
         """Saves user's Robinhood credentials in our database"""
 
-        encrypted_json_web_token: str = await self.encrypt(
+        encrypted_json_web_token: str = await self.encryption_service.encrypt(
             secret=successful_login_response.access_token
         )
-        encrypted_refresh_token: str = await self.encrypt(
+        encrypted_refresh_token: str = await self.encryption_service.encrypt(
             secret=successful_login_response.refresh_token
         )
 
@@ -120,13 +165,3 @@ class RobinhoodService(IInstitutionService):
                 refresh_token=encrypted_refresh_token,
             )
         )
-
-    async def encrypt(self, secret: str) -> str:
-        """Returns encrypted secret"""
-
-        encryption_secret_key = b64decode(settings.encryption_secret_key.encode())
-        cipher = AES.new(encryption_secret_key, AES.MODE_CBC)
-        iv_string = b64encode(cipher.iv).decode("utf-8")
-        encypted_bytes = cipher.encrypt(pad(secret.encode(), AES.block_size))
-        enrypted_secret_string = b64encode(encypted_bytes).decode("utf-8")
-        return enrypted_secret_string + iv_string

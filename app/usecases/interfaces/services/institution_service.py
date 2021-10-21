@@ -17,7 +17,3 @@ class IInstitutionService(ABC):
         institution_id: str,
     ) -> None:
         """Sends multifactore authentication code to institution"""
-
-    @abstractmethod
-    async def encrypt(self, secret: str) -> str:
-        """Returns encrypted secret"""

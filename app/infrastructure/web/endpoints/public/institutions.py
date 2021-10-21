@@ -55,7 +55,16 @@ async def login_to_institution(
     authorized_user: users.UserInDB = Depends(get_current_active_user),
 ) -> Mapping:
 
-    return await institution_service.login(credentials=body)
+    try:
+        return await institution_service.login(credentials=body)
+    except RobinhoodApiError as error:
+        raise await pelleum_errors.ExternalError(
+            detail=f"Robinhood API Error: {error.detail}"
+        ).robinhood()
+    except RobinhoodException as error:
+        raise await pelleum_errors.ExternalError(
+            detail=f"Robinhood API Error: {str(error)}"
+        ).robinhood()
 
 
 @institution_router.post(
@@ -79,6 +88,10 @@ async def send_mfa_code(
     except RobinhoodApiError as error:
         raise await pelleum_errors.ExternalError(
             detail=f"Robinhood API Error: {error.detail}"
+        ).robinhood()
+    except RobinhoodException as error:
+        raise await pelleum_errors.ExternalError(
+            detail=f"Robinhood API Error: {str(error)}"
         ).robinhood()
 
     return institutions.SuccessfulConnectionResponse(

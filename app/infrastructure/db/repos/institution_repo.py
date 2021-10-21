@@ -1,7 +1,7 @@
 from typing import Optional, List
 
 from databases import Database
-from sqlalchemy import and_, desc
+from sqlalchemy import and_, desc, select
 import asyncpg
 
 from app.usecases.interfaces.repos.institution_repo import (
@@ -22,6 +22,7 @@ class InstitutionRepo(IInstitutionRepo):
     async def create(
         self, connection_data: institutions.CreateConnectionRepoAdapter
     ) -> None:
+        """Creates connection data"""
 
         create_connection_statement = INSTITUTION_CONNECTIONS.insert().values(
             institution_id=connection_data.institution_id,
@@ -63,6 +64,7 @@ class InstitutionRepo(IInstitutionRepo):
         return institutions.Institution(**result) if result else None
 
     async def retrieve_all_institutions(self) -> List[institutions.Institution]:
+        """Retrieve all Pelleum supported institutions"""
 
         query = INSTITUTIONS.select().order_by(desc(INSTITUTIONS.c.created_at))
 
@@ -126,3 +128,48 @@ class InstitutionRepo(IInstitutionRepo):
         )
 
         await self.db.execute(connection_update_statemnent)
+
+    async def retrieve_many_institution_connections(
+        self,
+        user_id: int = None,
+        institution_id: int = None,
+        page_number: int = 1,
+        page_size: int = 200,
+    ) -> List[institutions.InstitutionConnection]:
+        """Retrieve many institution connections"""
+
+        conditions = []
+
+        if user_id:
+            conditions.append(INSTITUTION_CONNECTIONS.c.user_id == user_id)
+
+        if institution_id:
+            conditions.append(
+                INSTITUTION_CONNECTIONS.c.institution_id == institution_id
+            )
+
+        if len(conditions) == 0:
+            raise Exception(
+                "Please pass a condition parameter to query by to the function, retrieve_many_institution_connections()"
+            )
+
+        j = INSTITUTION_CONNECTIONS.join(
+            INSTITUTIONS,
+            INSTITUTION_CONNECTIONS.c.institution_id == INSTITUTIONS.c.institution_id,
+        )
+
+        query = (
+            select([INSTITUTION_CONNECTIONS, INSTITUTIONS])
+            .select_from(j)
+            .where(and_(*conditions))
+            .limit(page_size)
+            .offset((page_number - 1) * page_size)
+            .order_by(desc(INSTITUTION_CONNECTIONS.c.created_at))
+        )
+
+        query_results = await self.db.fetch_all(query)
+
+        return [
+            institutions.InstitutionConnectionJoinInstitution(**result)
+            for result in query_results
+        ]
