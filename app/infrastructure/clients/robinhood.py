@@ -23,6 +23,8 @@ class RobinhoodClient(IRobinhoodClient):
         headers: Optional[dict] = None,
         json_body: Any = None,
     ) -> Mapping[str, Any]:
+        """Facilitate actual API call"""
+
         async with self.client_session.request(
             method,
             self.robinhood_base_url + endpoint,

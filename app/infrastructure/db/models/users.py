@@ -18,6 +18,6 @@ USERS = sa.Table(
         sa.DateTime,
         nullable=False,
         server_default=sa.func.now(),
-        server_onupdate=sa.func.now(),
+        onupdate=sa.func.now(),
     ),
 )

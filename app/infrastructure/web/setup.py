@@ -6,6 +6,7 @@ from app.infrastructure.web.endpoints.public import institutions
 from app.infrastructure.web.endpoints.private import example as example_private
 from app.infrastructure.web.endpoints import health
 from app.dependencies import get_event_loop, get_client_session
+from app.infrastructure.tasks.events.startup import start_ongoing_holdings_sync
 
 # This line must be imported after app.dependencies to avoid a circular import (dependencies calls get_user_repo, which depends on get_or_create_database).
 from app.infrastructure.db.core import get_or_create_database
@@ -34,6 +35,7 @@ async def startup_event():
     await get_event_loop()
     await get_client_session()
     await get_or_create_database()
+    await start_ongoing_holdings_sync()
 
 
 @fastapi_app.on_event("shutdown")

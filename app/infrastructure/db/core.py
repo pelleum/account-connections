@@ -1,12 +1,15 @@
-from app.dependencies import logger
+from typing import Optional
+
 import databases
+from databases import Database
+
 from app.settings import settings
+from app.dependencies import logger
+
+DATABASE: Optional[Database] = None
 
 
-DATABASE = None
-
-
-async def get_or_create_database():
+async def get_or_create_database() -> Database:
     global DATABASE
     if DATABASE is not None:
         return DATABASE

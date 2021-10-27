@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Mapping
 
 from pydantic import BaseModel, Field
 
@@ -23,17 +23,6 @@ class LoginPayloadWithMFA(InitialLoginPayload):
     mfa_code: str
 
 
-class RobhinhoodIndividualHoldingData(BaseModel):
-    asset_symbol: str
-    quantity: float
-    average_by_price: float
-    asset_name: str
-
-
-class RobinhoodUserHoldings(BaseModel):
-    holdings: List[RobhinhoodIndividualHoldingData]
-
-
 ############# Responses #############
 class SuccessfulLoginResponse(BaseModel):
     """Successful Robinhood login response with token"""
@@ -55,6 +44,11 @@ class PositionData(BaseModel):
         description="The Robinhood URL for this specific instrument.",
         example="https://api.robinhood.com/instruments/e39ed23a-7bd1-4587-b060-71988d9ef483/",
     )
+    instrument_id: str = Field(
+        ...,
+        description="The Robinhood unique identifier for this instrument.",
+        example="e39ed23a-7bd1-4587-b060-71988d9ef483",
+    )
     average_buy_price: str = Field(
         ...,
         description="The user's average buy price for this specific asset.",
@@ -71,6 +65,10 @@ class PositionDataResponse(BaseModel):
     """Position Data Response"""
 
     results: List[PositionData]
+
+
+class InstrumentTracking(BaseModel):
+    tracked_instruments: Optional[Mapping]
 
 
 class InstrumentByURLResponse(BaseModel):

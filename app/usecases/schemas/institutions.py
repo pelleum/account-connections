@@ -89,12 +89,34 @@ class InstitutionConnection(CreateConnectionRepoAdapter):
     updated_at: datetime
 
 
-class InstitutionConnectionJoinInstitution(InstitutionConnection):
+class ConnectionJoinInstitutionJoinPortfolio(InstitutionConnection):
     name: str = Field(
         ...,
         description="The name of a Pelleum supported financial institution.",
         example="098736bd-fd4a-4414-bb27-bc4c87f74e0c",
     )
+    portfolio_id: int = Field(
+        ...,
+        description="The unique identifier for the associated Pelleum profile.",
+        example=5728736,
+    )
+
+
+class IndividualHoldingData(BaseModel):
+    asset_symbol: str
+    quantity: float
+    average_buy_price: Optional[float]
+    asset_name: Optional[str]
+
+
+class UserHoldings(BaseModel):
+    holdings: List[IndividualHoldingData]
+    insitution_name: str
+
+
+class InstitutionNameIdPair(BaseModel):
+    institution_name: str
+    Institution_id: str
 
 
 class Institution(BaseModel):
@@ -109,6 +131,28 @@ class Institution(BaseModel):
         ...,
         description="The name of a Pelleum supported financial institution.",
         example="098736bd-fd4a-4414-bb27-bc4c87f74e0c",
+    )
+    created_at: datetime
+    updated_at: datetime
+
+
+class RobinhoodInstrument(BaseModel):
+    """Database Model"""
+
+    instrument_id: str = Field(
+        ...,
+        description="A primary key unique identifier for a Robinhood instrument.",
+        example="e39ed23a-7bd1-4587-b060-71988d9ef483",
+    )
+    name: str = Field(
+        ...,
+        description="The name of a Robinhood instrument.",
+        example="Tesla",
+    )
+    symbol: str = Field(
+        ...,
+        description="The symbol of a Robinhood instrument.",
+        example="TSLA",
     )
     created_at: datetime
     updated_at: datetime

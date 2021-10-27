@@ -31,9 +31,24 @@ class UpdateAssetRepoAdapter(AssetBase):
         description="The total value of the asset positoin in US dollars.",
         example=102254.98,
     )
+    quantity: Optional[float] = Field(
+        None,
+        description="The total number of shares owned.",
+        example=102254.98,
+    )
+    is_up_to_date: Optional[bool] = Field(
+        None,
+        description="Whether or not the asset resource is up to date with the linked brokerage.",
+        example=True,
+    )
+    update_errors: Optional[str] = Field(
+        None,
+        description="An error during the periodic asset update process.",
+        example="There was an error.",
+    )
 
 
-class AssetRepoAdapter(AssetBase):
+class CreateAssetRepoAdapter(AssetBase):
     """Object sent to PortfolioRepo's create_asset()"""
 
     portfolio_id: int = Field(
@@ -41,23 +56,44 @@ class AssetRepoAdapter(AssetBase):
         description="The unique identifier of the Pelleum user's portfolio that this asset belongs to.",
         example="29",
     )
+    institution_id: str = Field(
+        ...,
+        description="The unique identifier of the Pelleum supported institution.",
+        example="c29cdd1a-feca-40b6-a4e1-f49c3a21f2af",
+    )
+    name: Optional[str] = Field(None, description="The asset's name.", example="Tesla")
     asset_symbol: str = Field(
         ..., description="The asset's ticker symbol.", example="TSLA"
     )
-    position_value: float = Field(
-        ...,
+    position_value: Optional[float] = Field(
+        None,
         description="The total value of the asset positoin in US dollars.",
+        example=102254.98,
+    )
+    quantity: float = Field(
+        ...,
+        description="The total number of shares owned.",
         example=102254.98,
     )
 
 
-class AssetInDB(AssetRepoAdapter):
+class AssetInDB(CreateAssetRepoAdapter):
     """Database Model"""
 
     asset_id: int = Field(
         ...,
         description="The unique identifier of a Pelleum user's individually owned asset",
         example=1,
+    )
+    is_up_to_date: Optional[bool] = Field(
+        None,
+        description="Whether or not the asset resource is up to date with the linked brokerage.",
+        example=True,
+    )
+    update_errors: Optional[str] = Field(
+        None,
+        description="An error during the periodic asset update process.",
+        example="There was an error.",
     )
     created_at: datetime = Field(
         ...,

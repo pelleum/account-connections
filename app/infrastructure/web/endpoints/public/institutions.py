@@ -3,6 +3,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, Body, Path
 from pydantic import constr
+
 from app.libraries import pelleum_errors
 from app.usecases.interfaces.clients.robinhood import (
     RobinhoodApiError,
@@ -11,12 +12,15 @@ from app.usecases.interfaces.clients.robinhood import (
 
 from app.usecases.schemas import institutions
 from app.usecases.schemas import users
+from app.usecases.schemas import portfolios
 from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
+from app.usecases.interfaces.repos.portfolio_repo import IPortfolioRepo
 from app.usecases.interfaces.services.institution_service import IInstitutionService
 from app.dependencies import (
     get_current_active_user,
     get_institution_repo,
     get_institution_service,
+    get_portfolio_repo,
 )
 
 
@@ -76,14 +80,17 @@ async def send_mfa_code(
     institution_id: constr(max_length=100) = Path(...),
     body: institutions.MultiFactorAuthCodeRequest = Body(...),
     institution_service: IInstitutionService = Depends(get_institution_service),
+    portfolio_repo: IPortfolioRepo = Depends(get_portfolio_repo),
     authorized_user: users.UserInDB = Depends(get_current_active_user),
 ) -> None:
 
     try:
-        await institution_service.send_multifactor_auth_code(
-            credentials=body,
-            user_id=authorized_user.user_id,
-            institution_id=institution_id,
+        brokerage_portfolio: institutions.UserHoldings = (
+            await institution_service.send_multifactor_auth_code(
+                credentials=body,
+                user_id=authorized_user.user_id,
+                institution_id=institution_id,
+            )
         )
     except RobinhoodApiError as error:
         raise await pelleum_errors.ExternalError(
@@ -93,6 +100,24 @@ async def send_mfa_code(
         raise await pelleum_errors.ExternalError(
             detail=f"Robinhood API Error: {str(error)}"
         ).robinhood()
+
+    user_portfolio: portfolios.PortfolioInDB = await portfolio_repo.retrieve_portfolio(
+        user_id=authorized_user.user_id
+    )
+
+    for asset in brokerage_portfolio.holdings:
+        await portfolio_repo.create_asset(
+            new_asset=portfolios.CreateAssetRepoAdapter(
+                average_buy_price=asset.average_buy_price
+                if asset.average_buy_price
+                else None,
+                portfolio_id=user_portfolio.portfolio_id,
+                institution_id=institution_id,
+                name=asset.asset_name,
+                asset_symbol=asset.asset_symbol,
+                quantity=asset.quantity,
+            )
+        )
 
     return institutions.SuccessfulConnectionResponse(
         account_connection_status="connected", connected_at=datetime.utcnow()

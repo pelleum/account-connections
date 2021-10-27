@@ -8,8 +8,8 @@ class IInstitutionRepo(ABC):
     @abstractmethod
     async def create(
         self, connection_data: institutions.CreateConnectionRepoAdapter
-    ) -> None:
-        """Create connection data"""
+    ) -> institutions.InstitutionConnection:
+        """Creates connection data"""
 
     @abstractmethod
     async def retrieve_institution(
@@ -32,15 +32,28 @@ class IInstitutionRepo(ABC):
         self,
         connection_id: int,
         updated_connection: institutions.UpdateConnectionRepoAdapter,
-    ) -> None:
+    ) -> institutions.InstitutionConnection:
         """Update a signle user-institution connection by connection_id"""
 
     @abstractmethod
-    async def retrieve_many_institution_connections(
+    async def retrieve_many_institution_connections(  # pylint: disable=too-many-arguments
         self,
         user_id: int = None,
         institution_id: int = None,
+        is_active: bool = None,
         page_number: int = 1,
-        page_size: int = 200,
+        page_size: int = 10000,
     ) -> List[institutions.InstitutionConnection]:
         """Retrieve many institution connections"""
+
+    @abstractmethod
+    async def create_robinhood_instrument(
+        self, instrument_id: str, name: str, symbol: str
+    ) -> None:
+        """Creates Robinhood instrument in our DB for future reference"""
+
+    @abstractmethod
+    async def retrieve_robinhood_instruments(
+        self, instrument_ids: list
+    ) -> List[institutions.RobinhoodInstrument]:
+        """Retrieve many instruments by supplied instrument_ids list"""
