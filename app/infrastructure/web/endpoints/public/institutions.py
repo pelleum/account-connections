@@ -74,7 +74,7 @@ async def login_to_institution(
 @institution_router.post(
     "/login/{institution_id}/mfa",
     status_code=201,
-    response_model=None,
+    response_model=institutions.SuccessfulConnectionResponse,
 )
 async def send_mfa_code(
     institution_id: constr(max_length=100) = Path(...),
@@ -82,7 +82,7 @@ async def send_mfa_code(
     institution_service: IInstitutionService = Depends(get_institution_service),
     portfolio_repo: IPortfolioRepo = Depends(get_portfolio_repo),
     authorized_user: users.UserInDB = Depends(get_current_active_user),
-) -> None:
+) -> institutions.SuccessfulConnectionResponse:
 
     try:
         brokerage_portfolio: institutions.UserHoldings = (

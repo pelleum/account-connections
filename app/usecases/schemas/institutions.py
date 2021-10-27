@@ -130,7 +130,7 @@ class Institution(BaseModel):
     name: str = Field(
         ...,
         description="The name of a Pelleum supported financial institution.",
-        example="098736bd-fd4a-4414-bb27-bc4c87f74e0c",
+        example="Robinhood",
     )
     created_at: datetime
     updated_at: datetime
