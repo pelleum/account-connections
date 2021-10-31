@@ -3,7 +3,8 @@ from time import time
 
 from databases import Database
 import asyncio
-import yfinance as yahoo_finance
+
+# import yfinance as yahoo_finance
 
 
 from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
@@ -154,7 +155,7 @@ class GetHoldingsTask:
         # 5. Return a list of the newly inserted asset symbols
         return [asset.asset_symbol for asset in assets_to_add_to_db]
 
-    async def get_asset_price(self, asset_symbol: str) -> float:
-        """Retrieve current asset price"""
-        # TODO: Integrate with API directly, too much uneccessary stuff (this will be becessary)
-        return yahoo_finance.Ticker(asset_symbol).history(period="1d")["Close"][0]
+    # async def get_asset_price(self, asset_symbol: str) -> float:
+    #     """Retrieve current asset price"""
+    #     # TODO: Integrate with API directly, too much uneccessary stuff (this will be becessary)
+    #     return yahoo_finance.Ticker(asset_symbol).history(period="1d")["Close"][0]

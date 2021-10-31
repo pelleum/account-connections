@@ -2,7 +2,7 @@ from typing import List, Mapping
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Body, Path
-from pydantic import constr
+from pydantic import constr, conint
 
 from app.libraries import pelleum_errors
 from app.usecases.interfaces.clients.robinhood import (
@@ -36,6 +36,7 @@ async def get_all_supported_institutions(
     institution_repo: IInstitutionRepo = Depends(get_institution_repo),
     authorized_user: users.UserInDB = Depends(get_current_active_user),
 ) -> institutions.SupportedInstitutionsResponse:
+    """Retrieve all Pelleum supported institutions"""
 
     supported_institutions: List[
         institutions.Institution
@@ -48,19 +49,84 @@ async def get_all_supported_institutions(
     )
 
 
+@institution_router.get(
+    "/connections",
+    status_code=200,
+    response_model=institutions.UserActiveConnectionsResponse,
+)
+async def retrieve_active_institution_connections(
+    institution_repo: IInstitutionRepo = Depends(get_institution_repo),
+    authorized_user: users.UserInDB = Depends(get_current_active_user),
+) -> institutions.UserActiveConnectionsResponse:
+    """Retrieve a user's connected accounts"""
+
+    user_active_connections: List[
+        institutions.ConnectionJoinInstitutionJoinPortfolio
+    ] = await institution_repo.retrieve_many_institution_connections(
+        user_id=authorized_user.user_id, is_active=True
+    )
+    active_connections = [
+        institutions.ConnectionInResponse(**active_connection.dict())
+        for active_connection in user_active_connections
+    ]
+
+    return institutions.UserActiveConnectionsResponse(
+        records=institutions.UserActiveConnections(
+            active_connections=active_connections
+        )
+    )
+
+
+@institution_router.delete(
+    "/{institution_id}",
+    status_code=204,
+    response_model=None,
+)
+async def deactivate_institution_connection(
+    institution_id: constr(max_length=100) = Path(...),
+    institution_repo: IInstitutionRepo = Depends(get_institution_repo),
+    authorized_user: users.UserInDB = Depends(get_current_active_user),
+) -> None:
+    """Deactivate a user's connected account"""
+
+    active_connection: institutions.InstitutionConnection = (
+        await institution_repo.retrieve_institution_connection(
+            user_id=authorized_user.user_id,
+            institution_id=institution_id,
+            is_active=True,
+        )
+    )
+
+    if not active_connection:
+        raise await pelleum_errors.PelleumErrors(
+            detail=f"There is no active connection associated with user_id, {authorized_user.user_id}, and institution_id, {institution_id}."
+        ).resource_not_found()
+
+    await institution_repo.update_institution_connection(
+        connection_id=active_connection.connection_id,
+        updated_connection=institutions.UpdateConnectionRepoAdapter(is_active=False),
+    )
+
+
 @institution_router.post(
     "/login/{institution_id}",
     status_code=200,
     response_model=Mapping,
 )
 async def login_to_institution(
+    institution_id: constr(max_length=100) = Path(...),
     body: institutions.LoginRequest = Body(...),
     institution_service: IInstitutionService = Depends(get_institution_service),
     authorized_user: users.UserInDB = Depends(get_current_active_user),
 ) -> Mapping:
+    """Login to institution"""
 
     try:
-        return await institution_service.login(credentials=body)
+        return await institution_service.login(
+            credentials=body,
+            user_id=authorized_user.user_id,
+            institution_id=institution_id,
+        )
     except RobinhoodApiError as error:
         raise await pelleum_errors.ExternalError(
             detail=f"Robinhood API Error: {error.detail}"
@@ -72,22 +138,23 @@ async def login_to_institution(
 
 
 @institution_router.post(
-    "/login/{institution_id}/mfa",
+    "/login/{institution_id}/verify",
     status_code=201,
     response_model=institutions.SuccessfulConnectionResponse,
 )
-async def send_mfa_code(
+async def verify_login_with_code(
     institution_id: constr(max_length=100) = Path(...),
     body: institutions.MultiFactorAuthCodeRequest = Body(...),
     institution_service: IInstitutionService = Depends(get_institution_service),
     portfolio_repo: IPortfolioRepo = Depends(get_portfolio_repo),
     authorized_user: users.UserInDB = Depends(get_current_active_user),
 ) -> institutions.SuccessfulConnectionResponse:
+    """Verify login to institution with verifaction code"""
 
     try:
         brokerage_portfolio: institutions.UserHoldings = (
             await institution_service.send_multifactor_auth_code(
-                credentials=body,
+                verification_credentials=body,
                 user_id=authorized_user.user_id,
                 institution_id=institution_id,
             )

@@ -40,6 +40,8 @@ class RobinhoodClient(IRobinhoodClient):
                     f"RobinhoodClient Error: Response status: {response.status}, Response Text: {resp_text}"
                 )
             if response.status >= 300:
+                if "challenge" in resp_json:
+                    return resp_json
                 try:
                     error = APIErrorBody(**resp_json)
                 except Exception:
@@ -54,10 +56,33 @@ class RobinhoodClient(IRobinhoodClient):
 
             return resp_json
 
-    async def login(self, payload: robinhood.InitialLoginPayload) -> Mapping:
+    async def login(
+        self, payload: robinhood.LoginPayload, challenge_id: str = None
+    ) -> Mapping:
         """Login to Robinhood and return the response"""
+
+        payload_raw = payload.dict()
+        if not payload.mfa_code:
+            del payload_raw["mfa_code"]
+
         return await self.api_call(
-            method="POST", endpoint="/oauth2/token/", json_body=payload.dict()
+            method="POST",
+            endpoint="/oauth2/token/",
+            json_body=payload_raw,
+            headers={"X-ROBINHOOD-CHALLENGE-RESPONSE-ID": challenge_id}
+            if challenge_id
+            else None,
+        )
+
+    async def respond_to_challenge(
+        self, challenge_code: str, challenge_id: str
+    ) -> Mapping:
+        """Respond to challenge issued by Robinhood for those with 2FA disabled"""
+
+        await self.api_call(
+            method="POST",
+            endpoint=f"/challenge/{challenge_id}/respond/",
+            json_body={"response": challenge_code},
         )
 
     async def get_postitions_data(

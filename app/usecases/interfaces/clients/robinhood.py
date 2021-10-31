@@ -35,8 +35,16 @@ class IRobinhoodClient(ABC):
         """Facilitate actual API call"""
 
     @abstractmethod
-    async def login(self, payload: robinhood.InitialLoginPayload) -> Mapping:
-        """Login to Robinhood"""
+    async def login(
+        self, payload: robinhood.LoginPayload, challenge_id: str = None
+    ) -> Mapping:
+        """Login to Robinhood and return the response"""
+
+    @abstractmethod
+    async def respond_to_challenge(
+        self, challenge_code: str, challenge_id: str
+    ) -> Mapping:
+        """Respond to challenge issued by Robinhood for those with 2FA disabled"""
 
     @abstractmethod
     async def get_postitions_data(
@@ -55,3 +63,5 @@ class IRobinhoodClient(ABC):
         self, symbol: str, access_token: str
     ) -> robinhood.NameDataResponse:
         """Gets asset name by symbol"""
+
+    

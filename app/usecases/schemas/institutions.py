@@ -20,10 +20,15 @@ class LoginRequest(BaseModel):
 
 
 class MultiFactorAuthCodeRequest(LoginRequest):
-    mfa_code: constr(max_length=10) = Field(
+    sms_code: Optional[constr(max_length=10)] = Field(
         None,
         description="The multifactor (sms) authentication code sent to the user's phone.",
         example="149837",
+    )
+    challenge_id: Optional[constr(max_length=100)] = Field(
+        None,
+        description="The unique identifier for the challenge that Robinhood issues to those who have 2FA disabled on their accounts.",
+        example="ca3cf668-404c-49d2-8510-ea9948ff66aa",
     )
 
 
@@ -31,11 +36,13 @@ class UserCredentials(LoginRequest):
     """Same as LoginRequest"""
 
 
-class UserCredentialsWithMFA(MultiFactorAuthCodeRequest):
+class UserVerificationCredentials(MultiFactorAuthCodeRequest):
     """Same as MultiFactorAuthCodeRequest"""
 
 
-class UpdateConnectionRepoAdapter(BaseModel):
+class InstitutionConnectionBase(BaseModel):
+    """Institution Connection Base"""
+
     username: Optional[str] = Field(
         None,
         description="An encrypted, optional username for the linked account.",
@@ -56,6 +63,11 @@ class UpdateConnectionRepoAdapter(BaseModel):
         description="A token used to refresh the user's JSON web token, if the account at hand requires it.",
         example="tyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ7",
     )
+
+
+class UpdateConnectionRepoAdapter(InstitutionConnectionBase):
+    """Object send to Repo to update an institution connection"""
+
     is_active: Optional[bool] = Field(
         None,
         description="Whether or not the connection is currently active.",
@@ -63,7 +75,7 @@ class UpdateConnectionRepoAdapter(BaseModel):
     )
 
 
-class CreateConnectionRepoAdapter(UpdateConnectionRepoAdapter):
+class CreateConnectionRepoAdapter(InstitutionConnectionBase):
     institution_id: str = Field(
         ...,
         description="A foreign key unique identifier for a Pellem supported financial institution.",
@@ -100,6 +112,39 @@ class ConnectionJoinInstitutionJoinPortfolio(InstitutionConnection):
         description="The unique identifier for the associated Pelleum profile.",
         example=5728736,
     )
+
+
+class ConnectionInResponse(BaseModel):
+    connection_id: int = Field(
+        ..., description="The unique identifier for an account connection.", example=1
+    )
+    institution_id: str = Field(
+        ...,
+        description="A foreign key unique identifier for a Pellem supported financial institution.",
+        example="098736bd-fd4a-4414-bb27-bc4c87f74e0c",
+    )
+    user_id: int = Field(
+        ...,
+        description="The unique identifier of the Pelleum user who this account connection belongs to.",
+        example=1,
+    )
+    is_active: bool = Field(
+        ...,
+        description="Whether or not the connection is currently active.",
+        example=True,
+    )
+    name: str = Field(
+        ...,
+        description="The name of a Pelleum supported financial institution.",
+        example="098736bd-fd4a-4414-bb27-bc4c87f74e0c",
+    )
+    portfolio_id: int = Field(
+        ...,
+        description="The unique identifier for the associated Pelleum profile.",
+        example=5728736,
+    )
+    created_at: datetime
+    updated_at: datetime
 
 
 class IndividualHoldingData(BaseModel):
@@ -165,6 +210,14 @@ class SupportedInstitutions(BaseModel):
 
 class SupportedInstitutionsResponse(BaseModel):
     records: SupportedInstitutions
+
+
+class UserActiveConnections(BaseModel):
+    active_connections: List[ConnectionInResponse]
+
+
+class UserActiveConnectionsResponse(BaseModel):
+    records: UserActiveConnections
 
 
 class SuccessfulConnectionResponse(BaseModel):

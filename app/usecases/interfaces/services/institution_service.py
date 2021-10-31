@@ -6,13 +6,18 @@ from app.usecases.schemas import institutions
 
 class IInstitutionService(ABC):
     @abstractmethod
-    async def login(self, credentials: institutions.UserCredentials) -> Mapping:
-        """Login to institution"""
+    async def login(
+        self,
+        credentials: institutions.UserCredentials,
+        user_id: int,
+        institution_id: str,
+    ) -> Mapping:
+        """Login to Institution"""
 
     @abstractmethod
     async def send_multifactor_auth_code(
         self,
-        credentials: institutions.UserCredentialsWithMFA,
+        verification_credentials: institutions.UserVerificationCredentials,
         user_id: int,
         institution_id: str,
     ) -> institutions.UserHoldings:

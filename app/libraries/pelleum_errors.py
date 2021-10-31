@@ -48,6 +48,12 @@ class PelleumErrors:
             else "The supplied resource ID is invalid.",
         )
 
+    async def resource_not_found(self):
+        return HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=self.detail if self.detail else "This resource does not exist.",
+        )
+
     async def unique_constraint(self):
         return HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -56,7 +62,7 @@ class PelleumErrors:
 
     async def client_error(self):
         return HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=self.detail if self.detail else "There was an client error.",
         )
 
@@ -74,6 +80,12 @@ class PelleumErrors:
             detail=self.detail
             if self.detail
             else "There was an external account connection error.",
+        )
+
+    async def general_bad_request(self):
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=self.detail if self.detail else "The request was not valid.",
         )
 
 

@@ -145,7 +145,7 @@ class InstitutionRepo(IInstitutionRepo):
         is_active: bool = None,
         page_number: int = 1,
         page_size: int = 10000,
-    ) -> List[institutions.InstitutionConnection]:
+    ) -> List[institutions.ConnectionJoinInstitutionJoinPortfolio]:
         """Retrieve many institution connections"""
 
         conditions = []

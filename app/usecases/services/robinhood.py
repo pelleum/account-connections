@@ -26,42 +26,12 @@ class RobinhoodService(IInstitutionService):
     async def login(
         self,
         credentials: institutions.UserCredentials,
+        user_id: int,
+        institution_id: str,
     ) -> Mapping:
         """Login to Robinhood"""
 
-        payload = robinhood.InitialLoginPayload(
-            client_id=settings.robinhood_client_id,
-            expires_in=86400,
-            grant_type="password",
-            username=credentials.username,
-            password=credentials.password,
-            scope="internal",
-            challenge_type="sms",
-            device_token=settings.robinhood_device_token,
-        )
-
-        return await self.robinhood_client.login(payload=payload)
-
-    async def send_multifactor_auth_code(
-        self,
-        credentials: institutions.UserCredentialsWithMFA,
-        user_id: int,
-        institution_id: str,
-    ) -> institutions.UserHoldings:
-        """Sends multi-factor auth code to instution and returns holdings"""
-
-        payload = robinhood.LoginPayloadWithMFA(
-            client_id=settings.robinhood_client_id,
-            expires_in=86400,
-            grant_type="password",
-            username=credentials.username,
-            password=credentials.password,
-            scope="internal",
-            challenge_type="sms",
-            device_token=settings.robinhood_device_token,
-            mfa_code=credentials.mfa_code,
-        )
-
+        # 1. Raise error if active connection already exists
         previous_connection = (
             await self._insitution_repo.retrieve_institution_connection(
                 user_id=user_id, institution_id=institution_id
@@ -71,29 +41,115 @@ class RobinhoodService(IInstitutionService):
         if previous_connection:
             if previous_connection.is_active:
                 raise await pelleum_errors.PelleumErrors(
-                    detail=f"User with user_id, {user_id}, already has an active account connection with the institution, {institution_id}"
+                    detail=f"User with user_id, {user_id}, already has an active account connection with Robinhood."
                 ).account_exists()
 
+        # 2. Construct payload to send to Robinhood
+        payload = robinhood.LoginPayload(
+            client_id=settings.robinhood_client_id,
+            expires_in=86400,
+            grant_type="password",
+            username=credentials.username,
+            password=credentials.password,
+            scope="internal",
+            challenge_type="sms",
+            device_token=settings.robinhood_device_token,
+        )
+
+        robinhood_json_response = await self.robinhood_client.login(payload=payload)
+        forbidden_returned_data = ("access_token", "refresh_token")
+
+        for key in robinhood_json_response:
+            if key in forbidden_returned_data:
+                raise await pelleum_errors.PelleumErrors(
+                    detail=f"User with user_id, {user_id}, already has an active account connection with Robinhood."
+                ).account_exists()
+
+        return robinhood_json_response
+
+    async def send_multifactor_auth_code(
+        self,
+        verification_credentials: institutions.UserVerificationCredentials,
+        user_id: int,
+        institution_id: str,
+    ) -> institutions.UserHoldings:
+        """Sends multi-factor auth code to Robinhood and returns holdings"""
+
+        # 1. Construct Robinhood login payload object
+        payload = robinhood.LoginPayload(
+            client_id=settings.robinhood_client_id,
+            expires_in=86400,
+            grant_type="password",
+            username=verification_credentials.username,
+            password=verification_credentials.password,
+            scope="internal",
+            challenge_type="sms",
+            device_token=settings.robinhood_device_token,
+            mfa_code=verification_credentials.sms_code
+            if verification_credentials.sms_code
+            else None,
+        )
+
+        previous_connection = (
+            await self._insitution_repo.retrieve_institution_connection(
+                user_id=user_id, institution_id=institution_id
+            )
+        )
+
+        # 2. Check to make sure an active connection does not already exist
+        if previous_connection:
+            if previous_connection.is_active:
+                raise await pelleum_errors.PelleumErrors(
+                    detail=f"User with user_id, {user_id}, already has an active account connection with Robinhood."
+                ).account_exists()
             # A previous connection exists, but it's not active, so get new access token
-            response_json = await self.robinhood_client.login(payload=payload)
+            if verification_credentials.challenge_id:
+                # Send request to supply challenge_id and code (pass the challenge)
+                await self.robinhood_client.respond_to_challenge(
+                    challenge_code=verification_credentials.sms_code,
+                    challenge_id=verification_credentials.challenge_id,
+                )
+                # Send login request with challenge_id in the header
+                response_json = await self.robinhood_client.login(
+                    payload=payload,
+                    challenge_id=verification_credentials.challenge_id,
+                )
+            else:
+                # Challenge not needed, proceed with mfa
+                response_json = await self.robinhood_client.login(payload=payload)
+
             successful_login_response = robinhood.SuccessfulLoginResponse(
                 **response_json
             )
-
+            # Update connection in our database
             updated_connection: institutions.InstitutionConnection = (
                 await self.update_credentials(
                     successful_login_response=successful_login_response,
                     connection_id=previous_connection.connection_id,
                 )
             )
-
+            # Retrieve and save our most recent holdings
             return await self.get_recent_holdings(
                 encrypted_json_web_token=updated_connection.json_web_token
             )
-        # No connection exists in our database, so create new one
-        response_json = await self.robinhood_client.login(payload=payload)
-        successful_login_response = robinhood.SuccessfulLoginResponse(**response_json)
 
+        # No connection exists in our database, so get new access token
+        if verification_credentials.challenge_id:
+            # Send request to supply challenge_id and code (pass the challenge)
+            await self.robinhood_client.respond_to_challenge(
+                challenge_code=verification_credentials.sms_code,
+                challenge_id=verification_credentials.challenge_id,
+            )
+            # Send login request with challenge_id in the header
+            response_json = await self.robinhood_client.login(
+                payload=payload, challenge_id=verification_credentials.challenge_id
+            )
+        else:
+            # Challenge not needed, proceed with mfa
+            response_json = await self.robinhood_client.login(payload=payload)
+
+        successful_login_response = robinhood.SuccessfulLoginResponse(**response_json)
+        # Save connection in our database
         newly_saved_connection: institutions.InstitutionConnection = (
             await self.save_credentials(
                 successful_login_response=successful_login_response,
@@ -101,7 +157,7 @@ class RobinhoodService(IInstitutionService):
                 institution_id=institution_id,
             )
         )
-
+        # Retrieve and save our most recent holdings
         return await self.get_recent_holdings(
             encrypted_json_web_token=newly_saved_connection.json_web_token
         )

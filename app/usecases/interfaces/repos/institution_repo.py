@@ -14,8 +14,8 @@ class IInstitutionRepo(ABC):
     @abstractmethod
     async def retrieve_institution(
         self, name: str = None, institution_id: str = None
-    ) -> Optional[institutions.InstitutionConnection]:
-        """Retrieve single Pelleum supported instution"""
+    ) -> Optional[institutions.Institution]:
+        """Retrieve Pelleum supported institution by name or institution_id"""
 
     @abstractmethod
     async def retrieve_all_institutions(self) -> List[institutions.Institution]:
@@ -23,7 +23,11 @@ class IInstitutionRepo(ABC):
 
     @abstractmethod
     async def retrieve_institution_connection(
-        self, user_id: str = None, institution_id: str = None, is_active: bool = None
+        self,
+        connection_id: int = None,
+        user_id: str = None,
+        institution_id: str = None,
+        is_active: bool = None,
     ) -> Optional[institutions.InstitutionConnection]:
         """Retrieve signle user-institution connection"""
 
@@ -36,14 +40,14 @@ class IInstitutionRepo(ABC):
         """Update a signle user-institution connection by connection_id"""
 
     @abstractmethod
-    async def retrieve_many_institution_connections(  # pylint: disable=too-many-arguments
+    async def retrieve_many_institution_connections(
         self,
         user_id: int = None,
         institution_id: int = None,
         is_active: bool = None,
         page_number: int = 1,
         page_size: int = 10000,
-    ) -> List[institutions.InstitutionConnection]:
+    ) -> List[institutions.ConnectionJoinInstitutionJoinPortfolio]:
         """Retrieve many institution connections"""
 
     @abstractmethod

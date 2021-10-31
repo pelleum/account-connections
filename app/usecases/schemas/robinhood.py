@@ -3,7 +3,7 @@ from typing import Optional, List, Mapping
 from pydantic import BaseModel, Field
 
 
-class InitialLoginPayload(BaseModel):
+class LoginPayload(BaseModel):
     """Payload initially sent to Robinhood to login"""
 
     client_id: str
@@ -15,12 +15,7 @@ class InitialLoginPayload(BaseModel):
     challenge_type: str
     refresh_token: Optional[str]
     device_token: str
-
-
-class LoginPayloadWithMFA(InitialLoginPayload):
-    """Payload with MFA sent to Robinhood to login"""
-
-    mfa_code: str
+    mfa_code: Optional[str] = None
 
 
 ############# Responses #############
