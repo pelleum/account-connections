@@ -40,7 +40,7 @@ class IInstitutionRepo(ABC):
         """Update a signle user-institution connection by connection_id"""
 
     @abstractmethod
-    async def retrieve_many_institution_connections(
+    async def retrieve_many_institution_connections(  # pylint: disable=too-many-arguments
         self,
         user_id: int = None,
         institution_id: int = None,

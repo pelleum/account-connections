@@ -17,11 +17,11 @@ class IInstitutionService(ABC):
     @abstractmethod
     async def send_multifactor_auth_code(
         self,
-        verification_credentials: institutions.UserVerificationCredentials,
+        verification_proof: institutions.UserVerificationCredentials,
         user_id: int,
         institution_id: str,
     ) -> institutions.UserHoldings:
-        """Sends multi-factor auth code to instution and returns holdings"""
+        """Sends multi-factor auth code to institution and returns holdings"""
 
     @abstractmethod
     async def get_recent_holdings(

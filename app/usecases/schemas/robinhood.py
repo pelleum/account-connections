@@ -2,6 +2,8 @@ from typing import Optional, List, Mapping
 
 from pydantic import BaseModel, Field
 
+from app.usecases.schemas.institutions import UserHoldings
+
 
 class LoginPayload(BaseModel):
     """Payload initially sent to Robinhood to login"""
@@ -27,7 +29,7 @@ class SuccessfulLoginResponse(BaseModel):
     token_type: str
     scope: str
     refresh_token: str
-    mfa_code: str
+    mfa_code: Optional[str]
     backup_code: Optional[str]
 
 
@@ -54,6 +56,11 @@ class PositionData(BaseModel):
         description="The number of shares of the asset the user owns.",
         example="29.04380500",
     )
+
+
+class CreateOrUpdateAssetsOnLogin(BaseModel):
+    action: str
+    brokerage_portfolio: UserHoldings
 
 
 class PositionDataResponse(BaseModel):

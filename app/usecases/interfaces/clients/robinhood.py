@@ -63,5 +63,3 @@ class IRobinhoodClient(ABC):
         self, symbol: str, access_token: str
     ) -> robinhood.NameDataResponse:
         """Gets asset name by symbol"""
-
-    

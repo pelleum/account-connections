@@ -1,8 +1,8 @@
-from typing import List, Mapping
+from typing import List, Mapping, Union
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Body, Path
-from pydantic import constr, conint
+from pydantic import constr
 
 from app.libraries import pelleum_errors
 from app.usecases.interfaces.clients.robinhood import (
@@ -11,6 +11,7 @@ from app.usecases.interfaces.clients.robinhood import (
 )
 
 from app.usecases.schemas import institutions
+from app.usecases.schemas import robinhood
 from app.usecases.schemas import users
 from app.usecases.schemas import portfolios
 from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
@@ -116,13 +117,16 @@ async def deactivate_institution_connection(
 async def login_to_institution(
     institution_id: constr(max_length=100) = Path(...),
     body: institutions.LoginRequest = Body(...),
+    portfolio_repo: IPortfolioRepo = Depends(get_portfolio_repo),
     institution_service: IInstitutionService = Depends(get_institution_service),
     authorized_user: users.UserInDB = Depends(get_current_active_user),
-) -> Mapping:
+) -> Union[Mapping, institutions.SuccessfulConnectionResponse]:
     """Login to institution"""
 
     try:
-        return await institution_service.login(
+        response: Union[
+            Mapping, robinhood.CreateOrUpdateAssetsOnLogin
+        ] = await institution_service.login(
             credentials=body,
             user_id=authorized_user.user_id,
             institution_id=institution_id,
@@ -135,6 +139,44 @@ async def login_to_institution(
         raise await pelleum_errors.ExternalError(
             detail=f"Robinhood API Error: {str(error)}"
         ).robinhood()
+
+    if isinstance(response, robinhood.CreateOrUpdateAssetsOnLogin):
+
+        user_portfolio: portfolios.PortfolioInDB = (
+            await portfolio_repo.retrieve_portfolio(user_id=authorized_user.user_id)
+        )
+
+        if response.action == "create":
+            for asset in response.brokerage_portfolio.holdings:
+                await portfolio_repo.create_asset(
+                    new_asset=portfolios.CreateAssetRepoAdapter(
+                        average_buy_price=asset.average_buy_price
+                        if asset.average_buy_price
+                        else None,
+                        portfolio_id=user_portfolio.portfolio_id,
+                        institution_id=institution_id,
+                        name=asset.asset_name,
+                        asset_symbol=asset.asset_symbol,
+                        quantity=asset.quantity,
+                    )
+                )
+        elif response.action == "update":
+            for asset in response.brokerage_portfolio.holdings:
+                await portfolio_repo.update_asset(
+                    portfolio_id=user_portfolio.portfolio_id,
+                    asset_symbol=asset.asset_symbol,
+                    institution_id=institution_id,
+                    updated_asset=portfolios.UpdateAssetRepoAdapter(
+                        is_up_to_date=True,
+                        quantity=asset.quantity,
+                        average_buy_price=asset.average_buy_price,
+                    ),
+                )
+
+        return institutions.SuccessfulConnectionResponse(
+            account_connection_status="connected", connected_at=datetime.utcnow()
+        )
+    return response
 
 
 @institution_router.post(
@@ -151,10 +193,15 @@ async def verify_login_with_code(
 ) -> institutions.SuccessfulConnectionResponse:
     """Verify login to institution with verifaction code"""
 
+    if not body.sms_code and not body.challenge_id:
+        raise pelleum_errors.PelleumErrors(
+            detail="Must send either sms_code or challenge_id to this endpoint."
+        ).general_bad_request()
+
     try:
         brokerage_portfolio: institutions.UserHoldings = (
             await institution_service.send_multifactor_auth_code(
-                verification_credentials=body,
+                verification_proof=body,
                 user_id=authorized_user.user_id,
                 institution_id=institution_id,
             )

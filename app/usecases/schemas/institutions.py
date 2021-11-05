@@ -19,7 +19,7 @@ class LoginRequest(BaseModel):
     )
 
 
-class MultiFactorAuthCodeRequest(LoginRequest):
+class MultiFactorAuthCodeRequest(BaseModel):
     sms_code: Optional[constr(max_length=10)] = Field(
         None,
         description="The multifactor (sms) authentication code sent to the user's phone.",
@@ -85,6 +85,11 @@ class CreateConnectionRepoAdapter(InstitutionConnectionBase):
         ...,
         description="The unique identifier of the Pelleum user who this account connection belongs to.",
         example=1,
+    )
+    is_active: bool = Field(
+        ...,
+        description="Whether or not the connection is currently active.",
+        example=True,
     )
 
 
@@ -157,11 +162,6 @@ class IndividualHoldingData(BaseModel):
 class UserHoldings(BaseModel):
     holdings: List[IndividualHoldingData]
     insitution_name: str
-
-
-class InstitutionNameIdPair(BaseModel):
-    institution_name: str
-    Institution_id: str
 
 
 class Institution(BaseModel):

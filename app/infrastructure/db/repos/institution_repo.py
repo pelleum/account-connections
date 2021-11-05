@@ -33,7 +33,7 @@ class InstitutionRepo(IInstitutionRepo):
             password=connection_data.password,
             json_web_token=connection_data.json_web_token,
             refresh_token=connection_data.refresh_token,
-            is_active=True,
+            is_active=connection_data.is_active,
         )
 
         try:

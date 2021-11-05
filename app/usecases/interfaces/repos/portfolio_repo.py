@@ -35,7 +35,7 @@ class IPortfolioRepo(ABC):
         """
         Update an individual asset holding by the composite index, (portfolio_id,
         asset_symbol, and institution_id)
-        """    
+        """
 
     @abstractmethod
     async def retrieve_asset(
