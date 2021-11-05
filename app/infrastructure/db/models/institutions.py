@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from sqlalchemy import schema
+
 from app.infrastructure.db.metadata import METADATA
 from app.infrastructure.db.models.users import USERS
 
@@ -15,7 +15,7 @@ INSTITUTIONS = sa.Table(
         sa.DateTime,
         nullable=False,
         server_default=sa.func.now(),
-        server_onupdate=sa.func.now(),
+        onupdate=sa.func.now(),
     ),
     schema="account_connections",
 )
@@ -48,11 +48,31 @@ INSTITUTION_CONNECTIONS = sa.Table(
         sa.DateTime,
         nullable=False,
         server_default=sa.func.now(),
-        server_onupdate=sa.func.now(),
+        onupdate=sa.func.now(),
     ),
     schema="account_connections",
 )
 
-sa.UniqueConstraint(
-    INSTITUTION_CONNECTIONS.c.user_id, INSTITUTION_CONNECTIONS.c.institution_id
+ROBINHOOD_INSTRUMENTS = sa.Table(
+    "robinhood_instruments",
+    METADATA,
+    sa.Column("instrument_id", sa.String, primary_key=True),
+    sa.Column("name", sa.String, nullable=False),
+    sa.Column("symbol", sa.String, nullable=False),
+    sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.func.now()),
+    sa.Column(
+        "updated_at",
+        sa.DateTime,
+        nullable=False,
+        server_default=sa.func.now(),
+        onupdate=sa.func.now(),
+    ),
+    schema="account_connections",
+)
+
+sa.Index(
+    "ix_user_id_institution_id",
+    INSTITUTION_CONNECTIONS.c.user_id,
+    INSTITUTION_CONNECTIONS.c.institution_id,
+    unique=True,
 )

@@ -1,3 +1,4 @@
+# NOTE: This model is currenly just mirroring the users model constructed in the service, pelleum-api
 import sqlalchemy as sa
 from app.infrastructure.db.metadata import METADATA
 
@@ -17,6 +18,6 @@ USERS = sa.Table(
         sa.DateTime,
         nullable=False,
         server_default=sa.func.now(),
-        server_onupdate=sa.func.now(),
+        onupdate=sa.func.now(),
     ),
 )
