@@ -52,3 +52,4 @@ websockets==10.0
 wrapt==1.12.1
 yarl==1.7.0
 zipp==3.6.0
+pycryptodome==3.11.0
