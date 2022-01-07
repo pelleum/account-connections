@@ -37,7 +37,7 @@ class GetHoldingsTask:
             except Exception as e:  # pylint: disable = broad-except
                 logger.exception(e)
 
-            await asyncio.sleep(30 * 60)
+            await asyncio.sleep(60 * 60 * 24)
 
     async def task(self):
         logger.info(

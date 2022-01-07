@@ -120,8 +120,8 @@ class PortfolioInDB(BaseModel):
         description="The user ID associated with this Pelleum portfolio.",
         example=3454,
     )
-    aggregated_value: float = Field(
-        ...,
+    aggregated_value: Optional[float] = Field(
+        None,
         description="The total value of the user's Pelleum portfolio in US dollars.",
         example=785943,
     )
