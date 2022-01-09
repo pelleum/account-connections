@@ -1,12 +1,12 @@
-from typing import Mapping, Optional, Any
+from typing import Any, Mapping, Optional
 
 import aiohttp
 
 from app.usecases.interfaces.clients.robinhood import (
-    RobinhoodException,
+    APIErrorBody,
     IRobinhoodClient,
     RobinhoodApiError,
-    APIErrorBody,
+    RobinhoodException,
 )
 from app.usecases.schemas import robinhood
 

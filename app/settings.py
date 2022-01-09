@@ -1,4 +1,5 @@
 from os import path
+
 from pydantic import BaseSettings
 
 DOTENV_FILE = ".env" if path.isfile(".env") else None

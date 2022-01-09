@@ -1,39 +1,18 @@
 # NOTE: These models are currenly just mirroring the portfolio models constructed in the service, pelleum-api
 import sqlalchemy as sa
+
 from app.infrastructure.db.metadata import METADATA
 from app.infrastructure.db.models.institutions import INSTITUTIONS
-
-
-PORTFOLIOS = sa.Table(
-    "portfolios",
-    METADATA,
-    sa.Column("portfolio_id", sa.BigInteger, primary_key=True, autoincrement=True),
-    sa.Column(
-        "user_id",
-        sa.Integer,
-        sa.ForeignKey("users.user_id"),
-        index=True,
-    ),
-    sa.Column("aggregated_value", sa.Float, nullable=False),
-    sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.func.now()),
-    sa.Column(
-        "updated_at",
-        sa.DateTime,
-        nullable=False,
-        server_default=sa.func.now(),
-        onupdate=sa.func.now(),
-    ),
-)
-
+from app.infrastructure.db.models.users import USERS
 
 ASSETS = sa.Table(
     "assets",
     METADATA,
     sa.Column("asset_id", sa.BigInteger, primary_key=True, autoincrement=True),
     sa.Column(
-        "portfolio_id",
-        sa.BigInteger,
-        sa.ForeignKey("portfolios.portfolio_id"),
+        "user_id",
+        sa.Integer,
+        sa.ForeignKey(USERS.c.user_id),
         index=True,
     ),
     sa.Column(
@@ -68,8 +47,8 @@ ASSETS = sa.Table(
 )
 
 sa.Index(
-    "ix_portfolio_id_asset_symbol_institution_id",
-    ASSETS.c.portfolio_id,
+    "ix_user_id_asset_symbol_institution_id",
+    ASSETS.c.user_id,
     ASSETS.c.asset_symbol,
     ASSETS.c.institution_id,
     unique=True,

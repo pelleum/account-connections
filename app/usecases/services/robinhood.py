@@ -1,13 +1,12 @@
-from typing import Mapping, List, Optional, Union
+from typing import List, Mapping, Optional, Union
 
-from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
-from app.usecases.interfaces.services.institution_service import IInstitutionService
-from app.usecases.interfaces.services.encryption_service import IEncryptionService
-from app.usecases.interfaces.clients.robinhood import IRobinhoodClient
-from app.usecases.schemas import institutions
-from app.usecases.schemas import robinhood
-from app.settings import settings
 from app.libraries import pelleum_errors
+from app.settings import settings
+from app.usecases.interfaces.clients.robinhood import IRobinhoodClient
+from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
+from app.usecases.interfaces.services.encryption_service import IEncryptionService
+from app.usecases.interfaces.services.institution_service import IInstitutionService
+from app.usecases.schemas import institutions, robinhood
 
 
 class RobinhoodService(IInstitutionService):

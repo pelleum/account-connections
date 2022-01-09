@@ -1,13 +1,13 @@
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from fastapi import Depends
 
-from app.usecases.schemas.users import UserInDB
-from app.usecases.schemas import auth
-from app.usecases.interfaces.user_repo import IUserRepo
 from app.dependencies import get_users_repo  # pylint: disable = cyclic-import
 from app.libraries import pelleum_errors
 from app.settings import settings
+from app.usecases.interfaces.user_repo import IUserRepo
+from app.usecases.schemas import auth
+from app.usecases.schemas.users import UserInDB
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=settings.token_url)
 

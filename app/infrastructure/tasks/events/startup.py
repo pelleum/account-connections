@@ -1,19 +1,19 @@
-from typing import List
 import time
+from typing import List
 
-from databases import Database
 import uvloop
+from databases import Database
 
 from app.dependencies import (
+    get_all_institution_services,
     get_event_loop,
     get_institution_repo,
     get_portfolio_repo,
-    get_all_institution_services,
 )
 from app.infrastructure.db.core import get_or_create_database
 from app.infrastructure.tasks.get_holdings import GetHoldingsTask
-from app.usecases.interfaces.repos.portfolio_repo import IPortfolioRepo
 from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
+from app.usecases.interfaces.repos.portfolio_repo import IPortfolioRepo
 from app.usecases.interfaces.services.institution_service import IInstitutionService
 
 

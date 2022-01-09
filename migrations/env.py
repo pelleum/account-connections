@@ -1,11 +1,11 @@
-from logging.config import fileConfig
-from os import getenv
 import pathlib
 import sys
+from logging.config import fileConfig
+from os import getenv
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
 from dotenv import load_dotenv
+from sqlalchemy import engine_from_config, pool
 
 sys.path[0] = str(pathlib.Path(__file__).parents[1].resolve())
 load_dotenv()
@@ -13,8 +13,8 @@ load_dotenv()
 # Import Tables
 from app.infrastructure.db.metadata import METADATA
 from app.infrastructure.db.models.institutions import (
-    INSTITUTIONS,
     INSTITUTION_CONNECTIONS,
+    INSTITUTIONS,
 )
 
 # this is the Alembic Config object, which provides

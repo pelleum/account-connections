@@ -13,13 +13,14 @@ migration_message = ""
 requirements.txt:
 	pip-compile --generate-hashes --output-file=requirements.txt requirements.in
 
-black:
+format:
+	isort $(formatted_code)
 	black $(formatted_code)
 
 lint:
 	pylint app
 
-run-dev:
+run:
 	python -m app --reload
 
 check:

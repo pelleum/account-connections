@@ -1,5 +1,5 @@
-from typing import Optional
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -51,7 +51,7 @@ class UpdateAssetRepoAdapter(AssetBase):
 class CreateAssetRepoAdapter(AssetBase):
     """Object sent to PortfolioRepo's create_asset()"""
 
-    portfolio_id: int = Field(
+    user_id: int = Field(
         ...,
         description="The unique identifier of the Pelleum user's portfolio that this asset belongs to.",
         example="29",
@@ -94,36 +94,6 @@ class AssetInDB(CreateAssetRepoAdapter):
         None,
         description="An error during the periodic asset update process.",
         example="There was an error.",
-    )
-    created_at: datetime = Field(
-        ...,
-        description="The time and date that the asset was created in our database.",
-        example="2021-10-19 04:56:14.02395",
-    )
-    updated_at: datetime = Field(
-        ...,
-        description="The time and date that the asset was updated in our database.",
-        example="2021-10-19 04:56:14.02395",
-    )
-
-
-class PortfolioInDB(BaseModel):
-    """Database Model"""
-
-    portfolio_id: int = Field(
-        ...,
-        description="The unique identifier of a user's Pelleum portfolio.",
-        example=3473873,
-    )
-    user_id: int = Field(
-        ...,
-        description="The user ID associated with this Pelleum portfolio.",
-        example=3454,
-    )
-    aggregated_value: float = Field(
-        ...,
-        description="The total value of the user's Pelleum portfolio in US dollars.",
-        example=785943,
     )
     created_at: datetime = Field(
         ...,

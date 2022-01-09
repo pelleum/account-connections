@@ -1,6 +1,6 @@
 import logging
-from app.settings import settings
 
+from app.settings import settings
 
 # NEED TO CONFIGURE LOGGER HOW WE WANT IT
 logging.basicConfig(

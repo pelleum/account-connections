@@ -1,7 +1,7 @@
+import asyncio
 from typing import Optional
 
 import uvloop
-import asyncio
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 

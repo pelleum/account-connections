@@ -1,10 +1,10 @@
-from base64 import b64encode, b64decode
+from base64 import b64decode, b64encode
 
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 
-from app.usecases.interfaces.services.encryption_service import IEncryptionService
 from app.settings import settings
+from app.usecases.interfaces.services.encryption_service import IEncryptionService
 
 
 class EncryptionService(IEncryptionService):

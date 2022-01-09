@@ -1,6 +1,5 @@
 from fastapi import HTTPException, status
 
-
 login_error = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Incorrect username or password",

@@ -3,8 +3,8 @@ from typing import Optional
 import databases
 from databases import Database
 
-from app.settings import settings
 from app.dependencies import logger
+from app.settings import settings
 
 DATABASE: Optional[Database] = None
 

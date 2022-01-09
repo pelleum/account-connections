@@ -1,5 +1,5 @@
-from typing import Optional, List
 from datetime import datetime
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, constr
 
@@ -112,11 +112,6 @@ class ConnectionJoinInstitutionJoinPortfolio(InstitutionConnection):
         description="The name of a Pelleum supported financial institution.",
         example="098736bd-fd4a-4414-bb27-bc4c87f74e0c",
     )
-    portfolio_id: int = Field(
-        ...,
-        description="The unique identifier for the associated Pelleum profile.",
-        example=5728736,
-    )
 
 
 class ConnectionInResponse(BaseModel):
@@ -142,11 +137,6 @@ class ConnectionInResponse(BaseModel):
         ...,
         description="The name of a Pelleum supported financial institution.",
         example="098736bd-fd4a-4414-bb27-bc4c87f74e0c",
-    )
-    portfolio_id: int = Field(
-        ...,
-        description="The unique identifier for the associated Pelleum profile.",
-        example=5728736,
     )
     created_at: datetime
     updated_at: datetime

@@ -1,17 +1,17 @@
 from typing import List
 
-from fastapi import Path, Depends
-from pydantic import constr
 import aiohttp
+from fastapi import Depends, Path
+from pydantic import constr
 
-from app.usecases.interfaces.services.institution_service import IInstitutionService
-from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
-from app.usecases.services.encryption import EncryptionService
-from app.usecases.schemas import institutions
-from app.usecases.services.robinhood import RobinhoodService
+from app.dependencies import get_client_session, get_institution_repo
 from app.infrastructure.clients.robinhood import RobinhoodClient
-from app.dependencies import get_institution_repo, get_client_session
 from app.libraries import pelleum_errors
+from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
+from app.usecases.interfaces.services.institution_service import IInstitutionService
+from app.usecases.schemas import institutions
+from app.usecases.services.encryption import EncryptionService
+from app.usecases.services.robinhood import RobinhoodService
 
 
 async def get_institution_service(

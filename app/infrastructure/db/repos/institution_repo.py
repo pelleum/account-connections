@@ -1,20 +1,17 @@
-from typing import Optional, List
+from typing import List, Optional
 
+import asyncpg
 from databases import Database
 from sqlalchemy import and_, desc, select
-import asyncpg
 
-from app.usecases.interfaces.repos.institution_repo import (
-    IInstitutionRepo,
-)
-from app.usecases.schemas import institutions
 from app.infrastructure.db.models.institutions import (
     INSTITUTION_CONNECTIONS,
     INSTITUTIONS,
     ROBINHOOD_INSTRUMENTS,
 )
-from app.infrastructure.db.models.portfolio import PORTFOLIOS
 from app.libraries import pelleum_errors
+from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
+from app.usecases.schemas import institutions
 
 
 class InstitutionRepo(IInstitutionRepo):
@@ -164,14 +161,13 @@ class InstitutionRepo(IInstitutionRepo):
         j = INSTITUTION_CONNECTIONS.join(
             INSTITUTIONS,
             INSTITUTION_CONNECTIONS.c.institution_id == INSTITUTIONS.c.institution_id,
-        ).join(PORTFOLIOS, INSTITUTION_CONNECTIONS.c.user_id == PORTFOLIOS.c.user_id)
+        )
 
         query = (
             select(
                 [
                     INSTITUTION_CONNECTIONS,
                     INSTITUTIONS.c.name,
-                    PORTFOLIOS.c.portfolio_id,
                 ]
             )
             .select_from(j)

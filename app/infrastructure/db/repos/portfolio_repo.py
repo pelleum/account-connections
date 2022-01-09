@@ -1,50 +1,22 @@
 from typing import List, Optional
-from sqlalchemy import desc, and_, delete
 
 from databases import Database
+from sqlalchemy import and_, delete, desc
 
-from app.infrastructure.db.models.portfolio import PORTFOLIOS, ASSETS
-from app.usecases.schemas import portfolios
+from app.infrastructure.db.models.portfolio import ASSETS
 from app.usecases.interfaces.repos.portfolio_repo import IPortfolioRepo
+from app.usecases.schemas import portfolios
 
 
 class PortfolioRepo(IPortfolioRepo):
     def __init__(self, db: Database):
         self.db = db
 
-    async def create_portfolio(self, user_id: int, aggregated_value: float) -> None:
-        """Creates new portfolio"""
-
-        portfolio_insert_statement = PORTFOLIOS.insert().values(
-            user_id=user_id, aggregated_value=aggregated_value
-        )
-
-        await self.db.execute(portfolio_insert_statement)
-
-    async def retrieve_portfolio(
-        self, user_id: str
-    ) -> Optional[portfolios.PortfolioInDB]:
-        """Retrieve portfolio by user_id"""
-
-        query = PORTFOLIOS.select().where(PORTFOLIOS.c.user_id == user_id)
-
-        result = await self.db.fetch_one(query)
-        if result:
-            return portfolios.PortfolioInDB(**result)
-
-    async def retrieve_all_portfolios(self) -> List[portfolios.PortfolioInDB]:
-        """Retrieve all Pelleum portfolios"""
-
-        query = PORTFOLIOS.select().order_by(desc(PORTFOLIOS.c.created_at))
-
-        query_results = await self.db.fetch_all(query)
-        return [portfolios.PortfolioInDB(**result) for result in query_results]
-
     async def create_asset(self, new_asset: portfolios.CreateAssetRepoAdapter) -> None:
         """Creates new asset"""
 
         asset_insert_statement = ASSETS.insert().values(
-            portfolio_id=new_asset.portfolio_id,
+            user_id=new_asset.user_id,
             institution_id=new_asset.institution_id,
             thesis_id=new_asset.thesis_id,
             asset_symbol=new_asset.asset_symbol,
@@ -61,20 +33,20 @@ class PortfolioRepo(IPortfolioRepo):
 
     async def update_asset(
         self,
-        portfolio_id: int,
+        user_id: int,
         asset_symbol: str,
         institution_id: int,
         updated_asset: portfolios.UpdateAssetRepoAdapter,
     ) -> None:
         """
-        Update an individual asset holding by the composite index, (portfolio_id,
+        Update an individual asset holding by the composite index, (user_id,
         asset_symbol, and institution_id)
         """
 
         conditions = []
 
-        if portfolio_id:
-            conditions.append(ASSETS.c.portfolio_id == portfolio_id)
+        if user_id:
+            conditions.append(ASSETS.c.user_id == user_id)
 
         if asset_symbol:
             conditions.append(ASSETS.c.asset_symbol == asset_symbol)
@@ -100,7 +72,7 @@ class PortfolioRepo(IPortfolioRepo):
     async def retrieve_asset(
         self,
         asset_id: int = None,
-        portfolio_id: int = None,
+        user_id: int = None,
         institution_id: str = None,
         asset_symbol: str = None,
     ) -> Optional[portfolios.AssetInDB]:
@@ -112,8 +84,8 @@ class PortfolioRepo(IPortfolioRepo):
         if asset_id:
             conditions.append(ASSETS.c.asset_id == asset_id)
 
-        if portfolio_id:
-            conditions.append(ASSETS.c.portfolio_id == portfolio_id)
+        if user_id:
+            conditions.append(ASSETS.c.user_id == user_id)
 
         if asset_symbol:
             conditions.append(ASSETS.c.asset_symbol == asset_symbol)
@@ -132,15 +104,15 @@ class PortfolioRepo(IPortfolioRepo):
 
     async def retrieve_brokerage_assets(
         self,
-        portfolio_id: int,
+        user_id: int,
         institution_id: str,
     ) -> List[portfolios.AssetInDB]:
-        """Retrieve all assets in a linked brokerage by portfolio_id"""
+        """Retrieve all assets in a linked brokerage by user_id"""
 
         conditions = []
 
-        if portfolio_id:
-            conditions.append(ASSETS.c.portfolio_id == portfolio_id)
+        if user_id:
+            conditions.append(ASSETS.c.user_id == user_id)
 
         if institution_id:
             conditions.append(ASSETS.c.institution_id == institution_id)

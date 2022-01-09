@@ -1,18 +1,16 @@
-from typing import List
+import asyncio
 from time import time
+from typing import List
 
 from databases import Database
-import asyncio
 
-# import yfinance as yahoo_finance
-
-
+from app.dependencies import logger
 from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
 from app.usecases.interfaces.repos.portfolio_repo import IPortfolioRepo
 from app.usecases.interfaces.services.institution_service import IInstitutionService
-from app.usecases.schemas import portfolios
-from app.usecases.schemas import institutions
-from app.dependencies import logger
+from app.usecases.schemas import institutions, portfolios
+
+# import yfinance as yahoo_finance
 
 
 class GetHoldingsTask:
@@ -45,10 +43,10 @@ class GetHoldingsTask:
         )
         task_start_time = time()
         # 1. Get all account connenctions TODO: set this up for batches
-        account_connections: List[
-            institutions.ConnectionJoinInstitutionJoinPortfolio
-        ] = await self._institution_repo.retrieve_many_institution_connections(
-            is_active=True
+        account_connections = (
+            await self._institution_repo.retrieve_many_institution_connections(
+                is_active=True
+            )
         )
         logger.info(
             "[GetHoldingsTask]: Retrieved %s account connections to process. Processing now..."
@@ -72,10 +70,8 @@ class GetHoldingsTask:
                 )
             )
 
-            newly_created_asset_symbols: List[
-                str
-            ] = await self.sync_with_brokerage_data(
-                portfolio_id=account_connection.portfolio_id,
+            newly_created_asset_symbols = await self.sync_with_brokerage_data(
+                user_id=account_connection.user_id,
                 institution_id=account_connection.institution_id,
                 brokerage_portfolio=brokerage_portfolio,
             )
@@ -85,7 +81,7 @@ class GetHoldingsTask:
                 if asset.asset_symbol not in newly_created_asset_symbols:
 
                     await self._portfolio_repo.update_asset(
-                        portfolio_id=account_connection.portfolio_id,
+                        user_id=account_connection.user_id,
                         asset_symbol=asset.asset_symbol,
                         institution_id=account_connection.institution_id,
                         updated_asset=portfolios.UpdateAssetRepoAdapter(
@@ -103,15 +99,13 @@ class GetHoldingsTask:
 
     async def sync_with_brokerage_data(
         self,
-        portfolio_id: int,
+        user_id: int,
         institution_id: str,
         brokerage_portfolio: institutions.UserHoldings,
     ) -> List[str]:
 
-        tracked_assets: List[
-            portfolios.AssetInDB
-        ] = await self._portfolio_repo.retrieve_brokerage_assets(
-            portfolio_id=portfolio_id, institution_id=institution_id
+        tracked_assets = await self._portfolio_repo.retrieve_brokerage_assets(
+            user_id=user_id, institution_id=institution_id
         )
 
         tracked_asset_symbols = [asset.asset_symbol for asset in tracked_assets]
@@ -144,7 +138,7 @@ class GetHoldingsTask:
                     average_buy_price=asset.average_buy_price
                     if asset.average_buy_price
                     else None,
-                    portfolio_id=portfolio_id,
+                    user_id=user_id,
                     institution_id=institution_id,
                     name=asset.asset_name,
                     asset_symbol=asset.asset_symbol,

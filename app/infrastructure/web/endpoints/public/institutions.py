@@ -1,29 +1,24 @@
-from typing import List, Mapping, Union
 from datetime import datetime
+from typing import List, Mapping, Union
 
-from fastapi import APIRouter, Depends, Body, Path
+from fastapi import APIRouter, Body, Depends, Path
 from pydantic import constr
 
-from app.libraries import pelleum_errors
-from app.usecases.interfaces.clients.robinhood import (
-    RobinhoodApiError,
-    RobinhoodException,
-)
-
-from app.usecases.schemas import institutions
-from app.usecases.schemas import robinhood
-from app.usecases.schemas import users
-from app.usecases.schemas import portfolios
-from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
-from app.usecases.interfaces.repos.portfolio_repo import IPortfolioRepo
-from app.usecases.interfaces.services.institution_service import IInstitutionService
 from app.dependencies import (
     get_current_active_user,
     get_institution_repo,
     get_institution_service,
     get_portfolio_repo,
 )
-
+from app.libraries import pelleum_errors
+from app.usecases.interfaces.clients.robinhood import (
+    RobinhoodApiError,
+    RobinhoodException,
+)
+from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
+from app.usecases.interfaces.repos.portfolio_repo import IPortfolioRepo
+from app.usecases.interfaces.services.institution_service import IInstitutionService
+from app.usecases.schemas import institutions, portfolios, robinhood, users
 
 institution_router = APIRouter(tags=["Institutions"])
 
@@ -61,10 +56,10 @@ async def retrieve_active_institution_connections(
 ) -> institutions.UserActiveConnectionsResponse:
     """Retrieve a user's connected accounts"""
 
-    user_active_connections: List[
-        institutions.ConnectionJoinInstitutionJoinPortfolio
-    ] = await institution_repo.retrieve_many_institution_connections(
-        user_id=authorized_user.user_id, is_active=True
+    user_active_connections = (
+        await institution_repo.retrieve_many_institution_connections(
+            user_id=authorized_user.user_id, is_active=True
+        )
     )
     active_connections = [
         institutions.ConnectionInResponse(**active_connection.dict())
@@ -141,11 +136,6 @@ async def login_to_institution(
         ).robinhood()
 
     if isinstance(response, robinhood.CreateOrUpdateAssetsOnLogin):
-
-        user_portfolio: portfolios.PortfolioInDB = (
-            await portfolio_repo.retrieve_portfolio(user_id=authorized_user.user_id)
-        )
-
         if response.action == "create":
             for asset in response.brokerage_portfolio.holdings:
                 await portfolio_repo.create_asset(
@@ -153,7 +143,7 @@ async def login_to_institution(
                         average_buy_price=asset.average_buy_price
                         if asset.average_buy_price
                         else None,
-                        portfolio_id=user_portfolio.portfolio_id,
+                        user_id=authorized_user.user_id,
                         institution_id=institution_id,
                         name=asset.asset_name,
                         asset_symbol=asset.asset_symbol,
@@ -163,7 +153,7 @@ async def login_to_institution(
         elif response.action == "update":
             for asset in response.brokerage_portfolio.holdings:
                 await portfolio_repo.update_asset(
-                    portfolio_id=user_portfolio.portfolio_id,
+                    user_id=authorized_user.user_id,
                     asset_symbol=asset.asset_symbol,
                     institution_id=institution_id,
                     updated_asset=portfolios.UpdateAssetRepoAdapter(
@@ -215,17 +205,13 @@ async def verify_login_with_code(
             detail=f"Robinhood API Error: {str(error)}"
         ).robinhood()
 
-    user_portfolio: portfolios.PortfolioInDB = await portfolio_repo.retrieve_portfolio(
-        user_id=authorized_user.user_id
-    )
-
     for asset in brokerage_portfolio.holdings:
         await portfolio_repo.create_asset(
             new_asset=portfolios.CreateAssetRepoAdapter(
                 average_buy_price=asset.average_buy_price
                 if asset.average_buy_price
                 else None,
-                portfolio_id=user_portfolio.portfolio_id,
+                user_id=authorized_user.user_id,
                 institution_id=institution_id,
                 name=asset.asset_name,
                 asset_symbol=asset.asset_symbol,
