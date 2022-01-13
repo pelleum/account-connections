@@ -201,7 +201,7 @@ class InstitutionRepo(IInstitutionRepo):
         """Retrieve many instruments by supplied instrument_ids list"""
 
         query = select(
-            ROBINHOOD_INSTRUMENTS,
+            [ROBINHOOD_INSTRUMENTS],
             ROBINHOOD_INSTRUMENTS.c.instrument_id.in_(instrument_ids),
         )
 

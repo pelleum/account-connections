@@ -199,22 +199,18 @@ class RobinhoodService(IInstitutionService):
         user_holdings = []
 
         # 2. Retrieve positions data from Robinhood
-        positions_data: robinhood.PositionDataResponse = (
-            await self.robinhood_client.get_postitions_data(access_token=json_web_token)
+        positions_data = await self.robinhood_client.get_postitions_data(
+            access_token=json_web_token
         )
 
         # 3. See the instruments we're already tracking
-        instrument_tracking: robinhood.InstrumentTracking = (
-            await self.get_tracked_instruments(
-                robinhood_instruments=positions_data.results
-            )
+        instrument_tracking = await self.get_tracked_instruments(
+            robinhood_instruments=positions_data.results
         )
 
         # 4. Build institutions.UserHoldings
         for robinhood_instrument in positions_data.results:
-            tracked_instrument: Optional[
-                institutions.RobinhoodInstrument
-            ] = instrument_tracking.tracked_instruments.get(
+            tracked_instrument = instrument_tracking.tracked_instruments.get(
                 robinhood_instrument.instrument_id
             )
             if tracked_instrument:
@@ -229,17 +225,13 @@ class RobinhoodService(IInstitutionService):
                 )
             else:
                 # We're not tracking this instrument, so reach out to Robinhood for the name and the ticker symbol
-                instrument_data: robinhood.InstrumentByURLResponse = (
-                    await self.robinhood_client.get_instrument_by_url(
-                        url=robinhood_instrument.instrument, access_token=json_web_token
-                    )
+                instrument_data = await self.robinhood_client.get_instrument_by_url(
+                    url=robinhood_instrument.instrument, access_token=json_web_token
                 )
                 ticker_symbol = instrument_data.symbol
 
-                name_data: robinhood.NameDataResponse = (
-                    await self.robinhood_client.get_name_by_symbol(
-                        symbol=ticker_symbol, access_token=json_web_token
-                    )
+                name_data = await self.robinhood_client.get_name_by_symbol(
+                    symbol=ticker_symbol, access_token=json_web_token
                 )
                 asset_name = name_data.results[0].name
 
@@ -273,18 +265,18 @@ class RobinhoodService(IInstitutionService):
         """Saves user's Robinhood credentials in our database"""
 
         if login_credentials:
-            encrypted_username: str = await self.encryption_service.encrypt(
+            encrypted_username = await self.encryption_service.encrypt(
                 secret=login_credentials.username
             )
-            encrypted_password: str = await self.encryption_service.encrypt(
+            encrypted_password = await self.encryption_service.encrypt(
                 secret=login_credentials.password
             )
 
         if successful_login_response:
-            encrypted_json_web_token: str = await self.encryption_service.encrypt(
+            encrypted_json_web_token = await self.encryption_service.encrypt(
                 secret=successful_login_response.access_token
             )
-            encrypted_refresh_token: str = await self.encryption_service.encrypt(
+            encrypted_refresh_token = await self.encryption_service.encrypt(
                 secret=successful_login_response.refresh_token
             )
 
@@ -352,14 +344,14 @@ class RobinhoodService(IInstitutionService):
         where the keys are instrument_ids and the values are pydantic
         institutions.RobinhoodInstrument objects"""
 
-        robinhood_instrument_ids: List[str] = [
+        robinhood_instrument_ids = [
             instrument.instrument_id for instrument in robinhood_instruments
         ]
 
-        tracked_instruments: List[
-            institutions.RobinhoodInstrument
-        ] = await self._insitution_repo.retrieve_robinhood_instruments(
-            instrument_ids=robinhood_instrument_ids
+        tracked_instruments = (
+            await self._insitution_repo.retrieve_robinhood_instruments(
+                instrument_ids=robinhood_instrument_ids
+            )
         )
 
         tracked_instruments_dict: Mapping = {}
