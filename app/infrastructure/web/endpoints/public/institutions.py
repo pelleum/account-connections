@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Mapping, Union
+from typing import List, Mapping, Union, Any
 
 from fastapi import APIRouter, Body, Depends, Path
 from pydantic import constr
@@ -107,7 +107,7 @@ async def deactivate_institution_connection(
 @institution_router.post(
     "/login/{institution_id}",
     status_code=200,
-    response_model=Mapping,
+    response_model=Union[Mapping[str, Any], institutions.SuccessfulConnectionResponse],
 )
 async def login_to_institution(
     institution_id: constr(max_length=100) = Path(...),
@@ -115,13 +115,11 @@ async def login_to_institution(
     portfolio_repo: IPortfolioRepo = Depends(get_portfolio_repo),
     institution_service: IInstitutionService = Depends(get_institution_service),
     authorized_user: users.UserInDB = Depends(get_current_active_user),
-) -> Union[Mapping, institutions.SuccessfulConnectionResponse]:
+) -> Union[Mapping[str, Any], institutions.SuccessfulConnectionResponse]:
     """Login to institution"""
 
     try:
-        response: Union[
-            Mapping, robinhood.CreateOrUpdateAssetsOnLogin
-        ] = await institution_service.login(
+        response = await institution_service.login(
             credentials=body,
             user_id=authorized_user.user_id,
             institution_id=institution_id,
@@ -136,7 +134,7 @@ async def login_to_institution(
         ).robinhood()
 
     if isinstance(response, robinhood.CreateOrUpdateAssetsOnLogin):
-        if response.action == "create":
+        if response.action == robinhood.LoginAction.CREATE:
             for asset in response.brokerage_portfolio.holdings:
                 await portfolio_repo.create_asset(
                     new_asset=portfolios.CreateAssetRepoAdapter(
@@ -150,7 +148,7 @@ async def login_to_institution(
                         quantity=asset.quantity,
                     )
                 )
-        elif response.action == "update":
+        elif response.action == robinhood.LoginAction.UPDATE:
             for asset in response.brokerage_portfolio.holdings:
                 await portfolio_repo.update_asset(
                     user_id=authorized_user.user_id,
@@ -189,7 +187,7 @@ async def verify_login_with_code(
         ).general_bad_request()
 
     try:
-        brokerage_portfolio: institutions.UserHoldings = (
+        brokerage_portfolio: institutions.UserBrokerageHoldings = (
             await institution_service.send_multifactor_auth_code(
                 verification_proof=body,
                 user_id=authorized_user.user_id,

@@ -38,6 +38,7 @@ class GetHoldingsTask:
             await asyncio.sleep(60 * 60 * 24)
 
     async def task(self):
+        """Sync all Pelleum portfolios with linked brokerage portfolios."""
         logger.info(
             "[GetHoldingsTask]: Beginning periodic brokerage account sync task."
         )
@@ -64,10 +65,8 @@ class GetHoldingsTask:
             )
 
             # 2. For each account connection, get user's holdings from brokerage API
-            brokerage_portfolio: institutions.UserHoldings = (
-                await service.get_recent_holdings(
-                    encrypted_json_web_token=account_connection.json_web_token
-                )
+            brokerage_portfolio = await service.get_recent_holdings(
+                encrypted_json_web_token=account_connection.json_web_token
             )
 
             newly_created_asset_symbols = await self.sync_with_brokerage_data(
@@ -76,7 +75,7 @@ class GetHoldingsTask:
                 brokerage_portfolio=brokerage_portfolio,
             )
 
-            # 4. Only update asset in our database if already recently added (avoids unecessary update)
+            # 4. Only update asset in our database if NOT recently added (no need to update if it was just added)
             for asset in brokerage_portfolio.holdings:
                 if asset.asset_symbol not in newly_created_asset_symbols:
 
@@ -101,8 +100,9 @@ class GetHoldingsTask:
         self,
         user_id: int,
         institution_id: str,
-        brokerage_portfolio: institutions.UserHoldings,
+        brokerage_portfolio: institutions.UserBrokerageHoldings,
     ) -> List[str]:
+        """Adds new holdings and deletes old holdings"""
 
         tracked_assets = await self._portfolio_repo.retrieve_brokerage_assets(
             user_id=user_id, institution_id=institution_id

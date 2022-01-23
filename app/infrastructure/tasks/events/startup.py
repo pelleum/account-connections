@@ -19,13 +19,11 @@ from app.usecases.interfaces.services.institution_service import IInstitutionSer
 
 async def start_ongoing_holdings_sync():
 
-    loop: uvloop.Loop = await get_event_loop()
-    database: Database = await get_or_create_database()
-    institution_repo: IInstitutionRepo = await get_institution_repo()
-    portfolio_repo: IPortfolioRepo = await get_portfolio_repo()
-    institution_services: List[
-        IInstitutionService
-    ] = await get_all_institution_services()
+    loop = await get_event_loop()
+    database = await get_or_create_database()
+    institution_repo = await get_institution_repo()
+    portfolio_repo = await get_portfolio_repo()
+    institution_services = await get_all_institution_services()
 
     get_holdings_task = GetHoldingsTask(
         db=database,

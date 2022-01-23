@@ -1,8 +1,14 @@
-from typing import List, Mapping, Optional
+from enum import Enum
+from typing import List, Mapping, Optional, Any
 
 from pydantic import BaseModel, Field
 
-from app.usecases.schemas.institutions import UserHoldings
+from app.usecases.schemas.institutions import UserBrokerageHoldings
+
+
+class LoginAction(str, Enum):
+    UPDATE = "UPDATE"
+    CREATE = "CREATE"
 
 
 class LoginPayload(BaseModel):
@@ -59,8 +65,8 @@ class PositionData(BaseModel):
 
 
 class CreateOrUpdateAssetsOnLogin(BaseModel):
-    action: str
-    brokerage_portfolio: UserHoldings
+    action: LoginAction
+    brokerage_portfolio: UserBrokerageHoldings
 
 
 class PositionDataResponse(BaseModel):
@@ -70,7 +76,7 @@ class PositionDataResponse(BaseModel):
 
 
 class InstrumentTracking(BaseModel):
-    tracked_instruments: Optional[Mapping]
+    tracked_instruments: Optional[Mapping[str, Any]]
 
 
 class InstrumentByURLResponse(BaseModel):

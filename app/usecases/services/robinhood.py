@@ -1,4 +1,4 @@
-from typing import List, Mapping, Optional, Union
+from typing import List, Mapping, Optional, Union, Any
 
 from app.libraries import pelleum_errors
 from app.settings import settings
@@ -27,7 +27,7 @@ class RobinhoodService(IInstitutionService):
         credentials: institutions.UserCredentials,
         user_id: int,
         institution_id: str,
-    ) -> Union[Mapping, robinhood.CreateOrUpdateAssetsOnLogin]:
+    ) -> Union[Mapping[str, Any], robinhood.CreateOrUpdateAssetsOnLogin]:
         """Login to Robinhood"""
 
         # 1. See if an account-connection is already active
@@ -57,24 +57,25 @@ class RobinhoodService(IInstitutionService):
 
         # 3. Login to Robinhood
         robinhood_json_response = await self.robinhood_client.login(payload=payload)
-        forbidden_returned_data = ("access_token", "refresh_token")
 
+        # 4. If the response contains the either of the forbidden keys, save
+        #    update/save user's JWTs and return. This will only ever be the case for
+        #    those with 2FA disabled on their accounts (no need for sms code)
         for key in robinhood_json_response:
-            # This will only ever be the case for those with 2FA disabled on their accounts
-            if key in forbidden_returned_data:
+            if key in ("access_token", "refresh_token"):  # forbidden return data
                 successful_login_response = robinhood.SuccessfulLoginResponse(
                     **robinhood_json_response
                 )
                 if previous_connection:
-                    connection: institutions.InstitutionConnection = (
-                        await self.update_credentials(
+                    connection = (
+                        await self.__update_credentials(
                             connection_id=previous_connection.connection_id,
                             successful_login_response=successful_login_response,
                         )
                     )
                 else:
-                    connection: institutions.InstitutionConnection = (
-                        await self.save_credentials(
+                    connection = (
+                        await self.__save_credentials(
                             user_id=user_id,
                             institution_id=institution_id,
                             login_credentials=credentials,
@@ -83,24 +84,25 @@ class RobinhoodService(IInstitutionService):
                     )
 
                 return robinhood.CreateOrUpdateAssetsOnLogin(
-                    action="update" if previous_connection else "create",
+                    action=robinhood.LoginAction.UPDATE if previous_connection else robinhood.LoginAction.CREATE,
                     brokerage_portfolio=await self.get_recent_holdings(
                         encrypted_json_web_token=connection.json_web_token
                     ),
                 )
 
+        # 5. For users with 2FA, save or update credentials and retrun Robinhood response
         if previous_connection:
             if (
                 previous_connection.username != credentials.username
                 or previous_connection.password != credentials.password
             ):
                 # Update account-connection object in database
-                await self.update_credentials(
+                await self.__update_credentials(
                     login_credentials=credentials,
                     connection_id=previous_connection.connection_id,
                 )
         else:
-            await self.save_credentials(
+            await self.__save_credentials(
                 login_credentials=credentials,
                 user_id=user_id,
                 institution_id=institution_id,
@@ -113,7 +115,7 @@ class RobinhoodService(IInstitutionService):
         verification_proof: institutions.UserVerificationCredentials,
         user_id: int,
         institution_id: str,
-    ) -> institutions.UserHoldings:
+    ) -> institutions.UserBrokerageHoldings:
         """Sends multi-factor auth code to Robinhood and returns holdings"""
 
         previous_connection = (
@@ -176,7 +178,7 @@ class RobinhoodService(IInstitutionService):
         successful_login_response = robinhood.SuccessfulLoginResponse(**response_json)
         # Update connection in our database
         updated_connection: institutions.InstitutionConnection = (
-            await self.update_credentials(
+            await self.__update_credentials(
                 successful_login_response=successful_login_response,
                 connection_id=previous_connection.connection_id,
             )
@@ -188,15 +190,13 @@ class RobinhoodService(IInstitutionService):
 
     async def get_recent_holdings(
         self, encrypted_json_web_token: str
-    ) -> institutions.UserHoldings:
+    ) -> institutions.UserBrokerageHoldings:
         """Returns most recent holdings directly from Robinhood"""
 
         # 1. Decrypt JSON web token
         json_web_token = await self.encryption_service.decrypt(
             encrypted_secret=encrypted_json_web_token
         )
-
-        user_holdings = []
 
         # 2. Retrieve positions data from Robinhood
         positions_data = await self.robinhood_client.get_postitions_data(
@@ -208,7 +208,8 @@ class RobinhoodService(IInstitutionService):
             robinhood_instruments=positions_data.results
         )
 
-        # 4. Build institutions.UserHoldings
+        # 4. Build institutions.UserBrokerageHoldings
+        user_holdings = []
         for robinhood_instrument in positions_data.results:
             tracked_instrument = instrument_tracking.tracked_instruments.get(
                 robinhood_instrument.instrument_id
@@ -251,11 +252,11 @@ class RobinhoodService(IInstitutionService):
                     symbol=ticker_symbol,
                 )
 
-        return institutions.UserHoldings(
+        return institutions.UserBrokerageHoldings(
             holdings=user_holdings, insitution_name=self.institution_name
         )
 
-    async def save_credentials(
+    async def __save_credentials(
         self,
         user_id: str,
         institution_id: str,
@@ -296,7 +297,7 @@ class RobinhoodService(IInstitutionService):
             )
         )
 
-    async def update_credentials(
+    async def __update_credentials(
         self,
         connection_id: int,
         login_credentials: Optional[institutions.UserCredentials] = None,
@@ -305,26 +306,26 @@ class RobinhoodService(IInstitutionService):
         """Updates Robinhood user's credentials in our database"""
 
         if login_credentials:
-            decrypted_username = await self.encryption_service.encrypt(
+            encrypted_username = await self.encryption_service.encrypt(
                 secret=login_credentials.username
             )
-            decrypted_password = await self.encryption_service.encrypt(
+            encrypted_password = await self.encryption_service.encrypt(
                 secret=login_credentials.password
             )
 
             await self._insitution_repo.update_institution_connection(
                 connection_id=connection_id,
                 updated_connection=institutions.UpdateConnectionRepoAdapter(
-                    username=decrypted_username,
-                    password=decrypted_password,
+                    username=encrypted_username,
+                    password=encrypted_password,
                 ),
             )
 
         if successful_login_response:
-            encrypted_json_web_token: str = await self.encryption_service.encrypt(
+            encrypted_json_web_token = await self.encryption_service.encrypt(
                 secret=successful_login_response.access_token
             )
-            encrypted_refresh_token: str = await self.encryption_service.encrypt(
+            encrypted_refresh_token = await self.encryption_service.encrypt(
                 secret=successful_login_response.refresh_token
             )
 
@@ -354,7 +355,7 @@ class RobinhoodService(IInstitutionService):
             )
         )
 
-        tracked_instruments_dict: Mapping = {}
+        tracked_instruments_dict = {}
         for tracked_instrument in tracked_instruments:
             tracked_instruments_dict[
                 tracked_instrument.instrument_id

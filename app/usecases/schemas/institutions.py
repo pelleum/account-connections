@@ -149,7 +149,7 @@ class IndividualHoldingData(BaseModel):
     asset_name: Optional[str]
 
 
-class UserHoldings(BaseModel):
+class UserBrokerageHoldings(BaseModel):
     holdings: List[IndividualHoldingData]
     insitution_name: str
 

@@ -58,7 +58,7 @@ class RobinhoodClient(IRobinhoodClient):
 
     async def login(
         self, payload: robinhood.LoginPayload, challenge_id: str = None
-    ) -> Mapping:
+    ) -> Mapping[str, Any]:
         """Login to Robinhood and return the response"""
 
         payload_raw = payload.dict()
@@ -76,7 +76,7 @@ class RobinhoodClient(IRobinhoodClient):
 
     async def respond_to_challenge(
         self, challenge_code: str, challenge_id: str
-    ) -> Mapping:
+    ) -> Mapping[str, Any]:
         """Respond to challenge issued by Robinhood for those with 2FA disabled"""
 
         await self.api_call(

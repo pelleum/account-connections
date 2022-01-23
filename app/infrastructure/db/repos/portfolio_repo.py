@@ -43,16 +43,11 @@ class PortfolioRepo(IPortfolioRepo):
         asset_symbol, and institution_id)
         """
 
-        conditions = []
-
-        if user_id:
-            conditions.append(ASSETS.c.user_id == user_id)
-
-        if asset_symbol:
-            conditions.append(ASSETS.c.asset_symbol == asset_symbol)
-
-        if institution_id:
-            conditions.append(ASSETS.c.institution_id == institution_id)
+        conditions = [
+            ASSETS.c.user_id == user_id,
+            ASSETS.c.asset_symbol == asset_symbol,
+            ASSETS.c.institution_id == institution_id,
+        ]
 
         query = ASSETS.update()
 
