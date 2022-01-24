@@ -28,3 +28,9 @@ class IInstitutionService(ABC):
         self, encrypted_json_web_token: str
     ) -> institutions.UserBrokerageHoldings:
         """Returns most recent holdings directly from institution"""
+
+    @abstractmethod
+    async def refresh_token(
+        self, encrypted_refresh_token: str
+    ) -> institutions.SuccessfulTokenRefreshResponse:
+        """Request new JSON web token from Robinhood."""

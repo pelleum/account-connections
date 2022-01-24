@@ -2,14 +2,9 @@ from typing import Any, Mapping, Optional
 
 import aiohttp
 
-from app.usecases.interfaces.clients.robinhood import (
-    APIErrorBody,
-    IRobinhoodClient,
-    RobinhoodApiError,
-    RobinhoodException,
-    RobinhoodUnauthorizedException,
-)
+from app.usecases.interfaces.clients.robinhood import IRobinhoodClient
 from app.usecases.schemas import robinhood
+from app.usecases.schemas.institutions import UnauthorizedException
 
 
 class RobinhoodClient(IRobinhoodClient):
@@ -37,27 +32,26 @@ class RobinhoodClient(IRobinhoodClient):
                 response_json = await response.json()
             except Exception:
                 response_text = await response.text()
-                raise RobinhoodException(  # pylint: disable=raise-missing-from
+                raise robinhood.RobinhoodException(  # pylint: disable=raise-missing-from
                     f"RobinhoodClient Error: Response status: {response.status}, Response Text: {response_text}"
                 )
 
             if response.status >= 300:
                 if response.status == 401:
-                    raise RobinhoodUnauthorizedException()
+                    raise UnauthorizedException()
 
                 if "challenge" in response_json:
                     return response_json
 
                 # if neither of the above are true, raise error
                 try:
-                    error = APIErrorBody(**response_json)
+                    error = robinhood.APIErrorBody(**response_json)
                 except Exception:
-                    raise RobinhoodException(  # pylint: disable=raise-missing-from
-                        f"RobinhoodClient Error: Response status: {response.status}, Response JSON: {resp_json}"
+                    raise robinhood.RobinhoodException(  # pylint: disable=raise-missing-from
+                        f"RobinhoodClient Error: Response status: {response.status}, Response JSON: {response_json}"
                     )
-                raise RobinhoodApiError(
-                    f"RobinhoodClient Error: {response.status} - {response_json}",
-                    http_status=response.status,
+                raise robinhood.RobinhoodApiError(
+                    status=response.status,
                     detail=error.detail,
                 )
 
@@ -105,7 +99,7 @@ class RobinhoodClient(IRobinhoodClient):
         try:
             return robinhood.PositionDataResponse(**positions_response_json)
         except Exception as error:
-            raise RobinhoodException(  # pylint: disable=raise-missing-from
+            raise robinhood.RobinhoodException(  # pylint: disable=raise-missing-from
                 f"RobinhoodClient Error: There was an error when coercing Robinhood's JSON into our PositionDataResponse model.\nRobinhood's JSON: {positions_data_json}\nSpecific Error: {error}"
             )
 
@@ -125,7 +119,7 @@ class RobinhoodClient(IRobinhoodClient):
         try:
             return robinhood.InstrumentByURLResponse(**instrument_response_json)
         except Exception as error:
-            raise RobinhoodException(  # pylint: disable=raise-missing-from
+            raise robinhood.RobinhoodException(  # pylint: disable=raise-missing-from
                 f"RobinhoodClient Error: There was an error when coercing Robinhood's JSON into our InstrumentByURLResponse model.\nRobinhood's JSON: {instrument_data_json}\nSpecific Error: {error}"
             )
 
@@ -143,6 +137,6 @@ class RobinhoodClient(IRobinhoodClient):
         try:
             return robinhood.NameDataResponse(**name_response_json)
         except Exception as error:
-            raise RobinhoodException(  # pylint: disable=raise-missing-from
+            raise robinhood.RobinhoodException(  # pylint: disable=raise-missing-from
                 f"RobinhoodClient Error: There was an error when coercing Robinhood's JSON into our NameDataResponse model.\nRobinhood's JSON: {name_data_json}\nSpecific Error: {error}"
             )

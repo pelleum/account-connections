@@ -1,30 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Mapping, Optional
 
-from pydantic import BaseModel
-
 from app.usecases.schemas import robinhood
-
-
-class RobinhoodException(Exception):
-    pass
-
-
-class RobinhoodApiError(RobinhoodException):
-    """Errors raised by Robinhood's API"""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args)
-        self.http_status = kwargs.get("http_status")
-        self.detail = kwargs.get("detail")
-
-
-class RobinhoodUnauthorizedException(Exception):
-    """Raised when a 401 unauthorized is returned"""
-
-
-class APIErrorBody(BaseModel):
-    detail: str
 
 
 class IRobinhoodClient(ABC):

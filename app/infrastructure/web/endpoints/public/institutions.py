@@ -11,10 +11,6 @@ from app.dependencies import (
     get_portfolio_repo,
 )
 from app.libraries import pelleum_errors
-from app.usecases.interfaces.clients.robinhood import (
-    RobinhoodApiError,
-    RobinhoodException,
-)
 from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
 from app.usecases.interfaces.repos.portfolio_repo import IPortfolioRepo
 from app.usecases.interfaces.services.institution_service import IInstitutionService
@@ -58,9 +54,12 @@ async def retrieve_active_institution_connections(
 
     user_active_connections = (
         await institution_repo.retrieve_many_institution_connections(
-            user_id=authorized_user.user_id, is_active=True
+            query_params=institutions.RetrieveManyConnectionsRepoAdapter(
+                user_id=authorized_user.user_id
+            )
         )
     )
+
     active_connections = [
         institutions.ConnectionInResponse(**active_connection.dict())
         for active_connection in user_active_connections
@@ -124,8 +123,15 @@ async def login_to_institution(
             user_id=authorized_user.user_id,
             institution_id=institution_id,
         )
-    except (RobinhoodApiError, RobinhoodException) as error:
-        error = error.detail if isinstance(error, RobinhoodApiError) else str(error)
+    except (
+        institutions.InstitutionApiError,
+        institutions.InstitutionException,
+    ) as error:
+        error = (
+            error.detail
+            if isinstance(error, institutions.InstitutionApiError)
+            else str(error)
+        )
         raise await pelleum_errors.ExternalError(
             detail=f"Robinhood API Error: {error}"
         ).robinhood()
@@ -191,8 +197,15 @@ async def verify_login_with_code(
                 institution_id=institution_id,
             )
         )
-    except (RobinhoodApiError, RobinhoodException) as error:
-        error = error.detail if isinstance(error, RobinhoodApiError) else str(error)
+    except (
+        institutions.InstitutionApiError,
+        institutions.InstitutionException,
+    ) as error:
+        error = (
+            error.detail
+            if isinstance(error, institutions.InstitutionApiError)
+            else str(error)
+        )
         raise await pelleum_errors.ExternalError(
             detail=f"Robinhood API Error: {error}"
         ).robinhood()

@@ -137,9 +137,7 @@ class InstitutionRepo(IInstitutionRepo):
 
     async def retrieve_many_institution_connections(
         self,
-        user_id: int = None,
-        institution_id: int = None,
-        is_active: bool = None,
+        query_params: institutions.RetrieveManyConnectionsRepoAdapter,
         page_number: int = 1,
         page_size: int = 10000,
     ) -> List[institutions.ConnectionJoinInstitutionJoinPortfolio]:
@@ -147,16 +145,26 @@ class InstitutionRepo(IInstitutionRepo):
 
         conditions = []
 
-        if user_id:
-            conditions.append(INSTITUTION_CONNECTIONS.c.user_id == user_id)
+        if query_params.user_id:
+            conditions.append(INSTITUTION_CONNECTIONS.c.user_id == query_params.user_id)
 
-        if institution_id:
+        if query_params.institution_id:
             conditions.append(
-                INSTITUTION_CONNECTIONS.c.institution_id == institution_id
+                INSTITUTION_CONNECTIONS.c.institution_id == query_params.institution_id
             )
 
-        if is_active:
-            conditions.append(INSTITUTION_CONNECTIONS.c.is_active == is_active)
+        if query_params.is_active:
+            conditions.append(
+                INSTITUTION_CONNECTIONS.c.is_active == query_params.is_active
+            )
+
+        if query_params.has_refresh_token:
+            conditions.append(INSTITUTION_CONNECTIONS.c.refresh_token != None)
+
+        if len(conditions) == 0:
+            raise Exception(
+                "Please supply query parameters to retrieve_many_institution_connections()"
+            )
 
         j = INSTITUTION_CONNECTIONS.join(
             INSTITUTIONS,
@@ -173,6 +181,7 @@ class InstitutionRepo(IInstitutionRepo):
             .select_from(j)
             .where(and_(*conditions))
             .limit(page_size)
+            # .with_for_update(skip_locked=True)
             .offset((page_number - 1) * page_size)
             .order_by(desc(INSTITUTION_CONNECTIONS.c.created_at))
         )

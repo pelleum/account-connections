@@ -5,11 +5,6 @@ from typing import List
 from databases import Database
 
 from app.dependencies import logger
-from app.usecases.interfaces.clients.robinhood import (
-    RobinhoodApiError,
-    RobinhoodException,
-    RobinhoodUnauthorizedException,
-)
 from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
 from app.usecases.interfaces.repos.portfolio_repo import IPortfolioRepo
 from app.usecases.interfaces.services.institution_service import IInstitutionService
@@ -51,7 +46,9 @@ class GetHoldingsTask:
         # 1. Get all account connenctions TODO: set this up for batches
         account_connections = (
             await self._institution_repo.retrieve_many_institution_connections(
-                is_active=True
+                query_params=institutions.RetrieveManyConnectionsRepoAdapter(
+                    is_active=True
+                )
             )
         )
         logger.info(
@@ -95,7 +92,7 @@ class GetHoldingsTask:
                                 average_buy_price=asset.average_buy_price,
                             ),
                         )
-            except RobinhoodUnauthorizedException:
+            except institutions.UnauthorizedException:
                 # A 401 was returned, so update this connection's is_active column to False
                 await self._institution_repo.update_institution_connection(
                     connection_id=account_connection.connection_id,
@@ -103,7 +100,10 @@ class GetHoldingsTask:
                         is_active=False
                     ),
                 )
-            except (RobinhoodApiError, RobinhoodException):
+            except (
+                institutions.InstitutionApiError,
+                institutions.InstitutionException,
+            ):
                 continue
 
         task_end_time = time()

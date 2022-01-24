@@ -75,6 +75,29 @@ class UpdateConnectionRepoAdapter(InstitutionConnectionBase):
     )
 
 
+class RetrieveManyConnectionsRepoAdapter(BaseModel):
+    user_id: Optional[int] = Field(
+        None,
+        description="The unique identifier of the Pelleum user who this account connection belongs to.",
+        example=1,
+    )
+    institution_id: Optional[str] = Field(
+        None,
+        description="A foreign key unique identifier for a Pellem supported financial institution.",
+        example="098736bd-fd4a-4414-bb27-bc4c87f74e0c",
+    )
+    is_active: Optional[bool] = Field(
+        None,
+        description="Whether or not the connection is currently active.",
+        example=True,
+    )
+    has_refresh_token: Optional[bool] = Field(
+        None,
+        description="Whether or not the connection has a refresh token.",
+        example=True,
+    )
+
+
 class CreateConnectionRepoAdapter(InstitutionConnectionBase):
     institution_id: str = Field(
         ...,
@@ -213,3 +236,26 @@ class UserActiveConnectionsResponse(BaseModel):
 class SuccessfulConnectionResponse(BaseModel):
     account_connection_status: str
     connected_at: datetime
+
+
+class SuccessfulTokenRefreshResponse(BaseModel):
+    json_web_token: str
+    refresh_token: str
+
+
+############# Exceptions #############
+
+
+class InstitutionException(Exception):
+    """Generic exception"""
+
+
+class UnauthorizedException(InstitutionException):
+    """Raised when a 401 unauthorized is returned"""
+
+
+class InstitutionApiError(InstitutionException):
+    """Errors raised by Institution API"""
+
+    status: int
+    detail: str

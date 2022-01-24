@@ -3,7 +3,7 @@ from typing import Any, List, Mapping, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from app.usecases.schemas.institutions import UserBrokerageHoldings
+from app.usecases.schemas import institutions
 
 ############# Our API Robinhood Models #############
 
@@ -15,11 +15,27 @@ class LoginAction(str, Enum):
 
 class CreateOrUpdateAssetsOnLogin(BaseModel):
     action: LoginAction
-    brokerage_portfolio: UserBrokerageHoldings
+    brokerage_portfolio: institutions.UserBrokerageHoldings
 
 
 class InstrumentTracking(BaseModel):
     tracked_instruments: Optional[Mapping[str, Any]]
+
+
+############# Robinhood Client Exceptions #############
+class RobinhoodException(institutions.InstitutionException):
+    """Generic Robinhood exception"""
+
+
+class RobinhoodApiError(institutions.InstitutionApiError, RobinhoodException):
+    """Errors raised by Robinhood's API"""
+
+    status: int
+    detail: str
+
+
+class APIErrorBody(BaseModel):
+    detail: str
 
 
 ############# Robinhood Client Models #############

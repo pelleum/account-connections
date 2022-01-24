@@ -362,3 +362,32 @@ class RobinhoodService(IInstitutionService):
         return robinhood.InstrumentTracking(
             tracked_instruments=tracked_instruments_dict,
         )
+
+    async def refresh_token(
+        self, encrypted_refresh_token: str
+    ) -> institutions.SuccessfulTokenRefreshResponse:
+        """Request new JSON web token from Robinhood."""
+
+        # 1. Decrypt the refresh token
+        refresh_token = await self.encryption_service.decrypt(
+            encrypted_secret=encrypted_refresh_token
+        )
+
+        # 2. Construct payload to send to Robhinhood
+        payload = robinhood.LoginPayload(
+            client_id=settings.robinhood_client_id,
+            expires_in=86400,
+            grant_type="refresh_token",
+            scope="internal",
+            challenge_type="sms",
+            device_token=settings.robinhood_device_token,
+            refresh_token=refresh_token,
+        )
+
+        # 3. Request fresh JSON web token from Robinhood
+        robinhood_json_response = await self.robinhood_client.login(payload=payload)
+
+        return institutions.SuccessfulTokenRefreshResponse(
+            json_web_token=robinhood_json_response.get("access_token"),
+            refresh_token=robinhood_json_response.get("refresh_token"),
+        )
