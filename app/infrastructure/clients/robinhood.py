@@ -7,6 +7,7 @@ from app.usecases.interfaces.clients.robinhood import (
     IRobinhoodClient,
     RobinhoodApiError,
     RobinhoodException,
+    RobinhoodUnauthorizedException,
 )
 from app.usecases.schemas import robinhood
 
@@ -20,8 +21,8 @@ class RobinhoodClient(IRobinhoodClient):
         self,
         method: str,
         endpoint: str,
-        headers: Optional[dict] = None,
-        json_body: Any = None,
+        headers: Optional[Mapping[str, str]] = None,
+        json_body: Optional[Mapping[str, Any]] = None,
     ) -> Mapping[str, Any]:
         """Facilitate actual API call"""
 
@@ -33,28 +34,34 @@ class RobinhoodClient(IRobinhoodClient):
             verify_ssl=False,
         ) as response:
             try:
-                resp_json = await response.json()
+                response_json = await response.json()
             except Exception:
-                resp_text = await response.text()
+                response_text = await response.text()
                 raise RobinhoodException(  # pylint: disable=raise-missing-from
-                    f"RobinhoodClient Error: Response status: {response.status}, Response Text: {resp_text}"
+                    f"RobinhoodClient Error: Response status: {response.status}, Response Text: {response_text}"
                 )
+
             if response.status >= 300:
-                if "challenge" in resp_json:
-                    return resp_json
+                if response.status == 401:
+                    raise RobinhoodUnauthorizedException()
+
+                if "challenge" in response_json:
+                    return response_json
+
+                # if neither of the above are true, raise error
                 try:
-                    error = APIErrorBody(**resp_json)
+                    error = APIErrorBody(**response_json)
                 except Exception:
                     raise RobinhoodException(  # pylint: disable=raise-missing-from
                         f"RobinhoodClient Error: Response status: {response.status}, Response JSON: {resp_json}"
                     )
                 raise RobinhoodApiError(
-                    f"RobinhoodClient Error: {response.status} - {resp_json}",
+                    f"RobinhoodClient Error: {response.status} - {response_json}",
                     http_status=response.status,
                     detail=error.detail,
                 )
 
-            return resp_json
+            return response_json
 
     async def login(
         self, payload: robinhood.LoginPayload, challenge_id: str = None
@@ -76,7 +83,7 @@ class RobinhoodClient(IRobinhoodClient):
 
     async def respond_to_challenge(
         self, challenge_code: str, challenge_id: str
-    ) -> Mapping[str, Any]:
+    ) -> None:
         """Respond to challenge issued by Robinhood for those with 2FA disabled"""
 
         await self.api_call(
@@ -85,18 +92,18 @@ class RobinhoodClient(IRobinhoodClient):
             json_body={"response": challenge_code},
         )
 
-    async def get_postitions_data(
+    async def get_positions_data(
         self, access_token: str
     ) -> robinhood.PositionDataResponse:
         """Get posiitions data"""
 
         headers = {"Authorization": f"Bearer {access_token}"}
 
-        positions_data_json = await self.api_call(
+        positions_response_json = await self.api_call(
             method="GET", endpoint="/positions/?nonzero=true", headers=headers
         )
         try:
-            return robinhood.PositionDataResponse(**positions_data_json)
+            return robinhood.PositionDataResponse(**positions_response_json)
         except Exception as error:
             raise RobinhoodException(  # pylint: disable=raise-missing-from
                 f"RobinhoodClient Error: There was an error when coercing Robinhood's JSON into our PositionDataResponse model.\nRobinhood's JSON: {positions_data_json}\nSpecific Error: {error}"
@@ -111,12 +118,12 @@ class RobinhoodClient(IRobinhoodClient):
 
         headers = {"Authorization": f"Bearer {access_token}"}
 
-        instrument_data_json = await self.api_call(
+        instrument_response_json = await self.api_call(
             method="GET", endpoint=endpoint, headers=headers
         )
 
         try:
-            return robinhood.InstrumentByURLResponse(**instrument_data_json)
+            return robinhood.InstrumentByURLResponse(**instrument_response_json)
         except Exception as error:
             raise RobinhoodException(  # pylint: disable=raise-missing-from
                 f"RobinhoodClient Error: There was an error when coercing Robinhood's JSON into our InstrumentByURLResponse model.\nRobinhood's JSON: {instrument_data_json}\nSpecific Error: {error}"
@@ -129,12 +136,12 @@ class RobinhoodClient(IRobinhoodClient):
 
         headers = {"Authorization": f"Bearer {access_token}"}
 
-        name_data_json = await self.api_call(
+        name_response_json = await self.api_call(
             method="GET", endpoint=f"/instruments/?symbol={symbol}", headers=headers
         )
 
         try:
-            return robinhood.NameDataResponse(**name_data_json)
+            return robinhood.NameDataResponse(**name_response_json)
         except Exception as error:
             raise RobinhoodException(  # pylint: disable=raise-missing-from
                 f"RobinhoodClient Error: There was an error when coercing Robinhood's JSON into our NameDataResponse model.\nRobinhood's JSON: {name_data_json}\nSpecific Error: {error}"

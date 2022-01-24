@@ -1,4 +1,4 @@
-from typing import List, Mapping, Optional, Union, Any
+from typing import Any, List, Mapping, Optional, Union
 
 from app.libraries import pelleum_errors
 from app.settings import settings
@@ -67,24 +67,22 @@ class RobinhoodService(IInstitutionService):
                     **robinhood_json_response
                 )
                 if previous_connection:
-                    connection = (
-                        await self.__update_credentials(
-                            connection_id=previous_connection.connection_id,
-                            successful_login_response=successful_login_response,
-                        )
+                    connection = await self.__update_credentials(
+                        connection_id=previous_connection.connection_id,
+                        successful_login_response=successful_login_response,
                     )
                 else:
-                    connection = (
-                        await self.__save_credentials(
-                            user_id=user_id,
-                            institution_id=institution_id,
-                            login_credentials=credentials,
-                            successful_login_response=successful_login_response,
-                        )
+                    connection = await self.__save_credentials(
+                        user_id=user_id,
+                        institution_id=institution_id,
+                        login_credentials=credentials,
+                        successful_login_response=successful_login_response,
                     )
 
                 return robinhood.CreateOrUpdateAssetsOnLogin(
-                    action=robinhood.LoginAction.UPDATE if previous_connection else robinhood.LoginAction.CREATE,
+                    action=robinhood.LoginAction.UPDATE
+                    if previous_connection
+                    else robinhood.LoginAction.CREATE,
                     brokerage_portfolio=await self.get_recent_holdings(
                         encrypted_json_web_token=connection.json_web_token
                     ),
@@ -199,7 +197,7 @@ class RobinhoodService(IInstitutionService):
         )
 
         # 2. Retrieve positions data from Robinhood
-        positions_data = await self.robinhood_client.get_postitions_data(
+        positions_data = await self.robinhood_client.get_positions_data(
             access_token=json_web_token
         )
 

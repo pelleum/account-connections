@@ -19,6 +19,10 @@ class RobinhoodApiError(RobinhoodException):
         self.detail = kwargs.get("detail")
 
 
+class RobinhoodUnauthorizedException(Exception):
+    """Raised when a 401 unauthorized is returned"""
+
+
 class APIErrorBody(BaseModel):
     detail: str
 
@@ -29,8 +33,8 @@ class IRobinhoodClient(ABC):
         self,
         method: str,
         endpoint: str,
-        headers: Optional[dict] = None,
-        json_body: Any = None,
+        headers: Optional[Mapping[str, str]] = None,
+        json_body: Optional[Mapping[str, Any]] = None,
     ) -> Mapping[str, Any]:
         """Facilitate actual API call"""
 
@@ -43,11 +47,11 @@ class IRobinhoodClient(ABC):
     @abstractmethod
     async def respond_to_challenge(
         self, challenge_code: str, challenge_id: str
-    ) -> Mapping[str, Any]:
+    ) -> None:
         """Respond to challenge issued by Robinhood for those with 2FA disabled"""
 
     @abstractmethod
-    async def get_postitions_data(
+    async def get_positions_data(
         self, access_token: str
     ) -> robinhood.PositionDataResponse:
         """Get posiitions data"""

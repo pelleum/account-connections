@@ -1,14 +1,28 @@
 from enum import Enum
-from typing import List, Mapping, Optional, Any
+from typing import Any, List, Mapping, Optional, Union
 
 from pydantic import BaseModel, Field
 
 from app.usecases.schemas.institutions import UserBrokerageHoldings
 
+############# Our API Robinhood Models #############
+
 
 class LoginAction(str, Enum):
     UPDATE = "UPDATE"
     CREATE = "CREATE"
+
+
+class CreateOrUpdateAssetsOnLogin(BaseModel):
+    action: LoginAction
+    brokerage_portfolio: UserBrokerageHoldings
+
+
+class InstrumentTracking(BaseModel):
+    tracked_instruments: Optional[Mapping[str, Any]]
+
+
+############# Robinhood Client Models #############
 
 
 class LoginPayload(BaseModel):
@@ -24,19 +38,6 @@ class LoginPayload(BaseModel):
     refresh_token: Optional[str]
     device_token: str
     mfa_code: Optional[str] = None
-
-
-############# Responses #############
-class SuccessfulLoginResponse(BaseModel):
-    """Successful Robinhood login response with token"""
-
-    access_token: str
-    expires_in: int
-    token_type: str
-    scope: str
-    refresh_token: str
-    mfa_code: Optional[str]
-    backup_code: Optional[str]
 
 
 class PositionData(BaseModel):
@@ -64,29 +65,6 @@ class PositionData(BaseModel):
     )
 
 
-class CreateOrUpdateAssetsOnLogin(BaseModel):
-    action: LoginAction
-    brokerage_portfolio: UserBrokerageHoldings
-
-
-class PositionDataResponse(BaseModel):
-    """Position Data Response"""
-
-    results: List[PositionData]
-
-
-class InstrumentTracking(BaseModel):
-    tracked_instruments: Optional[Mapping[str, Any]]
-
-
-class InstrumentByURLResponse(BaseModel):
-    """Instrument data (used to get ticker symbol)"""
-
-    symbol: str = Field(
-        ..., description="An individual asset's ticker symbol.", example="TSLA"
-    )
-
-
 class NameData(BaseModel):
     """The data that we're concerned with in a get name by symbol response"""
 
@@ -98,7 +76,52 @@ class NameData(BaseModel):
     )
 
 
+############# Robinhood Client Responses #############
+
+
+class SuccessfulLoginResponse(BaseModel):
+    """Successful Robinhood login response with token."""
+
+    access_token: str
+    expires_in: int
+    token_type: str
+    scope: str
+    refresh_token: str
+    mfa_code: Optional[str]
+    backup_code: Optional[str]
+
+
+class PositionDataResponse(BaseModel):
+    """Position Data Response"""
+
+    results: List[PositionData] = None
+
+
+class InstrumentByURLResponse(BaseModel):
+    """Instrument data (used to get ticker symbol)"""
+
+    symbol: str = Field(
+        ..., description="An individual asset's ticker symbol.", example="TSLA"
+    )
+
+
 class NameDataResponse(BaseModel):
     """Get name by symbol response"""
 
     results: List[NameData]
+
+
+class RobinhoodClientResponse(BaseModel):
+    """Response from Robinhood Client. The response body is optional
+    to account for a potential 401, in which case, the body will not fit
+    any of the desired models, but the status is still needed."""
+
+    status: int
+    response_body: Optional[
+        Union[
+            SuccessfulLoginResponse,
+            NameDataResponse,
+            InstrumentByURLResponse,
+            PositionDataResponse,
+        ]
+    ] = None

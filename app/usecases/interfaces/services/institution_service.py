@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Mapping, Any
+from typing import Any, Mapping
 
 from app.usecases.schemas import institutions
 

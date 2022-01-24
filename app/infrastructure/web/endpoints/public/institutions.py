@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Mapping, Union, Any
+from typing import Any, List, Mapping, Union
 
 from fastapi import APIRouter, Body, Depends, Path
 from pydantic import constr
@@ -124,13 +124,10 @@ async def login_to_institution(
             user_id=authorized_user.user_id,
             institution_id=institution_id,
         )
-    except RobinhoodApiError as error:
+    except (RobinhoodApiError, RobinhoodException) as error:
+        error = error.detail if isinstance(error, RobinhoodApiError) else str(error)
         raise await pelleum_errors.ExternalError(
-            detail=f"Robinhood API Error: {error.detail}"
-        ).robinhood()
-    except RobinhoodException as error:
-        raise await pelleum_errors.ExternalError(
-            detail=f"Robinhood API Error: {str(error)}"
+            detail=f"Robinhood API Error: {error}"
         ).robinhood()
 
     if isinstance(response, robinhood.CreateOrUpdateAssetsOnLogin):
@@ -194,13 +191,10 @@ async def verify_login_with_code(
                 institution_id=institution_id,
             )
         )
-    except RobinhoodApiError as error:
+    except (RobinhoodApiError, RobinhoodException) as error:
+        error = error.detail if isinstance(error, RobinhoodApiError) else str(error)
         raise await pelleum_errors.ExternalError(
-            detail=f"Robinhood API Error: {error.detail}"
-        ).robinhood()
-    except RobinhoodException as error:
-        raise await pelleum_errors.ExternalError(
-            detail=f"Robinhood API Error: {str(error)}"
+            detail=f"Robinhood API Error: {error}"
         ).robinhood()
 
     for asset in brokerage_portfolio.holdings:
