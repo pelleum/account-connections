@@ -30,8 +30,10 @@ class RobinhoodException(institutions.InstitutionException):
 class RobinhoodApiError(institutions.InstitutionApiError, RobinhoodException):
     """Errors raised by Robinhood's API"""
 
-    status: int
-    detail: str
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args)
+        self.status = kwargs.get("status")
+        self.detail = kwargs.get("detail")
 
 
 class APIErrorBody(BaseModel):

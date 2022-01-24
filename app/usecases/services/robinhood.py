@@ -387,7 +387,15 @@ class RobinhoodService(IInstitutionService):
         # 3. Request fresh JSON web token from Robinhood
         robinhood_json_response = await self.robinhood_client.login(payload=payload)
 
+        # 4. Encrypt newly refreshed tokens
+        encrypted_json_web_token = await self.encryption_service.encrypt(
+            secret=robinhood_json_response.get("access_token")
+        )
+        encrypted_refresh_token = await self.encryption_service.encrypt(
+            secret=robinhood_json_response.get("refresh_token")
+        )
+
         return institutions.SuccessfulTokenRefreshResponse(
-            json_web_token=robinhood_json_response.get("access_token"),
-            refresh_token=robinhood_json_response.get("refresh_token"),
+            encrypted_json_web_token=encrypted_json_web_token,
+            encrypted_refresh_token=encrypted_refresh_token,
         )

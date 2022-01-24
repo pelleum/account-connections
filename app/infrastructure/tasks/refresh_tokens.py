@@ -64,7 +64,7 @@ class RefreshTokensTask:
 
             try:
                 # 2. For each retrieved connection, request new tokens from institution
-                refreshed_tokens = await service.refresh_token(
+                encrypted_refreshed_tokens = await service.refresh_token(
                     encrypted_refresh_token=account_connection.refresh_token
                 )
             except institutions.UnauthorizedException:
@@ -75,18 +75,26 @@ class RefreshTokensTask:
                         is_active=False
                     ),
                 )
+                logger.warning(
+                    "[RefreshTokenTask]: Received a 401 Unauthorized when attempting to refresh token. Detail: connection_id: %s"
+                    % account_connection.connection_id
+                )
             except (
                 institutions.InstitutionApiError,
                 institutions.InstitutionException,
-            ):
+            ) as error:
+                logger.warning(
+                    "[RefreshTokenTask]: Error refreshing JSON web token - Error: %s"
+                    % error
+                )
                 continue
 
             # 3. Save new tokens in database
             await self._institution_repo.update_institution_connection(
                 connection_id=account_connection.connection_id,
                 updated_connection=institutions.UpdateConnectionRepoAdapter(
-                    json_web_token=refreshed_tokens.json_web_token,
-                    refresh_token=refreshed_tokens.refresh_token,
+                    json_web_token=encrypted_refreshed_tokens.encrypted_json_web_token,
+                    refresh_token=encrypted_refreshed_tokens.encrypted_refresh_token,
                 ),
             )
 

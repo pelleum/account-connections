@@ -239,8 +239,8 @@ class SuccessfulConnectionResponse(BaseModel):
 
 
 class SuccessfulTokenRefreshResponse(BaseModel):
-    json_web_token: str
-    refresh_token: str
+    encrypted_json_web_token: str
+    encrypted_refresh_token: str
 
 
 ############# Exceptions #############

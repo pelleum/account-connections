@@ -58,13 +58,18 @@ class RobinhoodClient(IRobinhoodClient):
             return response_json
 
     async def login(
-        self, payload: robinhood.LoginPayload, challenge_id: str = None
+        self, payload: robinhood.LoginPayload, challenge_id: Optional[str] = None
     ) -> Mapping[str, Any]:
         """Login to Robinhood and return the response"""
 
         payload_raw = payload.dict()
-        if not payload.mfa_code:
-            del payload_raw["mfa_code"]
+
+        if payload.grant_type == "refresh_token":
+            del payload_raw["username"]
+            del payload_raw["password"]
+        else:
+            if not payload.mfa_code:
+                del payload_raw["mfa_code"]
 
         return await self.api_call(
             method="POST",
