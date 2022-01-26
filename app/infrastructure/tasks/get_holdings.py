@@ -9,6 +9,7 @@ from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
 from app.usecases.interfaces.repos.portfolio_repo import IPortfolioRepo
 from app.usecases.interfaces.services.institution_service import IInstitutionService
 from app.usecases.schemas import institutions, portfolios
+from app.settings import settings
 
 # import yfinance as yahoo_finance
 
@@ -35,7 +36,7 @@ class GetHoldingsTask:
             except Exception as e:  # pylint: disable = broad-except
                 logger.exception(e)
 
-            await asyncio.sleep(60 * 60 * 24)
+            await asyncio.sleep(settings.asset_update_task_frequency)
 
     async def task(self):
         """Sync all Pelleum portfolios with linked brokerage portfolios."""
@@ -48,7 +49,8 @@ class GetHoldingsTask:
             await self._institution_repo.retrieve_many_institution_connections(
                 query_params=institutions.RetrieveManyConnectionsRepoAdapter(
                     is_active=True
-                )
+                ),
+                skip_locked=True
             )
         )
         logger.info(
@@ -100,6 +102,10 @@ class GetHoldingsTask:
                         is_active=False
                     ),
                 )
+                logger.warning(
+                    "[GetHoldingsTask]: Received a 401 Unauthorized when attempting to update assets. Detail: connection_id: %s"
+                    % account_connection.connection_id
+                )
             except (
                 institutions.InstitutionApiError,
                 institutions.InstitutionException,
@@ -150,8 +156,8 @@ class GetHoldingsTask:
 
         # 4. For each asset we're not tracking, insert asset into our database
         for asset in assets_to_add_to_db:
-            await self._portfolio_repo.create_asset(
-                new_asset=portfolios.CreateAssetRepoAdapter(
+            await self._portfolio_repo.upsert_asset(
+                new_asset=portfolios.UpsertAssetRepoAdapter(
                     average_buy_price=asset.average_buy_price
                     if asset.average_buy_price
                     else None,

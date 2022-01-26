@@ -111,7 +111,6 @@ async def deactivate_institution_connection(
 async def login_to_institution(
     institution_id: constr(max_length=100) = Path(...),
     body: institutions.LoginRequest = Body(...),
-    portfolio_repo: IPortfolioRepo = Depends(get_portfolio_repo),
     institution_service: IInstitutionService = Depends(get_institution_service),
     authorized_user: users.UserInDB = Depends(get_current_active_user),
 ) -> Union[Mapping[str, Any], institutions.SuccessfulConnectionResponse]:
@@ -136,40 +135,13 @@ async def login_to_institution(
             detail=f"Robinhood API Error: {error}"
         ).robinhood()
 
-    if isinstance(response, robinhood.CreateOrUpdateAssetsOnLogin):
-        if response.action == robinhood.LoginAction.CREATE:
-            for asset in response.brokerage_portfolio.holdings:
-                await portfolio_repo.create_asset(
-                    new_asset=portfolios.CreateAssetRepoAdapter(
-                        average_buy_price=asset.average_buy_price
-                        if asset.average_buy_price
-                        else None,
-                        user_id=authorized_user.user_id,
-                        institution_id=institution_id,
-                        name=asset.asset_name,
-                        asset_symbol=asset.asset_symbol,
-                        quantity=asset.quantity,
-                    )
-                )
-        elif response.action == robinhood.LoginAction.UPDATE:
-            for asset in response.brokerage_portfolio.holdings:
-                await portfolio_repo.update_asset(
-                    user_id=authorized_user.user_id,
-                    asset_symbol=asset.asset_symbol,
-                    institution_id=institution_id,
-                    updated_asset=portfolios.UpdateAssetRepoAdapter(
-                        is_up_to_date=True,
-                        quantity=asset.quantity,
-                        average_buy_price=asset.average_buy_price,
-                    ),
-                )
-
+    if not response:
         return institutions.SuccessfulConnectionResponse(
             account_connection_status="connected", connected_at=datetime.utcnow()
         )
     return response
 
-
+        
 @institution_router.post(
     "/login/{institution_id}/verify",
     status_code=201,
@@ -179,7 +151,6 @@ async def verify_login_with_code(
     institution_id: constr(max_length=100) = Path(...),
     body: institutions.MultiFactorAuthCodeRequest = Body(...),
     institution_service: IInstitutionService = Depends(get_institution_service),
-    portfolio_repo: IPortfolioRepo = Depends(get_portfolio_repo),
     authorized_user: users.UserInDB = Depends(get_current_active_user),
 ) -> institutions.SuccessfulConnectionResponse:
     """Verify login to institution with verifaction code"""
@@ -190,12 +161,10 @@ async def verify_login_with_code(
         ).general_bad_request()
 
     try:
-        brokerage_portfolio: institutions.UserBrokerageHoldings = (
-            await institution_service.send_multifactor_auth_code(
-                verification_proof=body,
-                user_id=authorized_user.user_id,
-                institution_id=institution_id,
-            )
+        await institution_service.send_multifactor_auth_code(
+            verification_proof=body,
+            user_id=authorized_user.user_id,
+            institution_id=institution_id,
         )
     except (
         institutions.InstitutionApiError,
@@ -209,20 +178,6 @@ async def verify_login_with_code(
         raise await pelleum_errors.ExternalError(
             detail=f"Robinhood API Error: {error}"
         ).robinhood()
-
-    for asset in brokerage_portfolio.holdings:
-        await portfolio_repo.create_asset(
-            new_asset=portfolios.CreateAssetRepoAdapter(
-                average_buy_price=asset.average_buy_price
-                if asset.average_buy_price
-                else None,
-                user_id=authorized_user.user_id,
-                institution_id=institution_id,
-                name=asset.asset_name,
-                asset_symbol=asset.asset_symbol,
-                quantity=asset.quantity,
-            )
-        )
 
     return institutions.SuccessfulConnectionResponse(
         account_connection_status="connected", connected_at=datetime.utcnow()

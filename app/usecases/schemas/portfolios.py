@@ -48,8 +48,8 @@ class UpdateAssetRepoAdapter(AssetBase):
     )
 
 
-class CreateAssetRepoAdapter(AssetBase):
-    """Object sent to PortfolioRepo's create_asset()"""
+class UpsertAssetRepoAdapter(AssetBase):
+    """Object sent to PortfolioRepo's upsert_asset()"""
 
     user_id: int = Field(
         ...,
@@ -77,7 +77,7 @@ class CreateAssetRepoAdapter(AssetBase):
     )
 
 
-class AssetInDB(CreateAssetRepoAdapter):
+class AssetInDB(UpsertAssetRepoAdapter):
     """Database Model"""
 
     asset_id: int = Field(

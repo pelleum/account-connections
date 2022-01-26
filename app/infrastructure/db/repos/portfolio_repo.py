@@ -1,7 +1,8 @@
 from typing import List, Optional
 
 from databases import Database
-from sqlalchemy import and_, delete, desc
+from sqlalchemy import and_, delete, insert
+from sqlalchemy.dialects.postgresql import insert
 
 from app.infrastructure.db.models.portfolio import ASSETS
 from app.usecases.interfaces.repos.portfolio_repo import IPortfolioRepo
@@ -12,10 +13,10 @@ class PortfolioRepo(IPortfolioRepo):
     def __init__(self, db: Database):
         self.db = db
 
-    async def create_asset(self, new_asset: portfolios.CreateAssetRepoAdapter) -> None:
-        """Creates new asset"""
+    async def upsert_asset(self, new_asset: portfolios.UpsertAssetRepoAdapter) -> None:
+        """Creates or updates new asset"""
 
-        asset_insert_statement = ASSETS.insert().values(
+        asset_insert_statement = insert(ASSETS).values(
             user_id=new_asset.user_id,
             institution_id=new_asset.institution_id,
             thesis_id=new_asset.thesis_id,
@@ -29,7 +30,18 @@ class PortfolioRepo(IPortfolioRepo):
             is_up_to_date=True,
         )
 
-        await self.db.execute(asset_insert_statement)
+
+        upsert_stmt = asset_insert_statement.on_conflict_do_update(
+            index_elements=[ASSETS.c.user_id, ASSETS.c.asset_symbol, ASSETS.c.institution_id],
+            set_=dict(
+                position_value=new_asset.position_value,
+                quantity=new_asset.quantity,
+                average_buy_price=new_asset.average_buy_price,
+                total_contribution=new_asset.total_contribution
+            )
+        )
+
+        await self.db.execute(upsert_stmt)
 
     async def update_asset(
         self,

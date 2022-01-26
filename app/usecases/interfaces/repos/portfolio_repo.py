@@ -6,7 +6,7 @@ from app.usecases.schemas import portfolios
 
 class IPortfolioRepo(ABC):
     @abstractmethod
-    async def create_asset(self, new_asset: portfolios.CreateAssetRepoAdapter) -> None:
+    async def upsert_asset(self, new_asset: portfolios.UpsertAssetRepoAdapter) -> None:
         """Creates new asset"""
 
     @abstractmethod

@@ -1,15 +1,14 @@
 from typing import List, Optional
 
-import asyncpg
 from databases import Database
 from sqlalchemy import and_, desc, select
+from sqlalchemy.dialects.postgresql import insert
 
 from app.infrastructure.db.models.institutions import (
     INSTITUTION_CONNECTIONS,
     INSTITUTIONS,
     ROBINHOOD_INSTRUMENTS,
 )
-from app.libraries import pelleum_errors
 from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
 from app.usecases.schemas import institutions
 
@@ -18,12 +17,12 @@ class InstitutionRepo(IInstitutionRepo):
     def __init__(self, db: Database):
         self.db = db
 
-    async def create(
+    async def upsert(
         self, connection_data: institutions.CreateConnectionRepoAdapter
     ) -> institutions.InstitutionConnection:
         """Creates connection data"""
 
-        create_connection_statement = INSTITUTION_CONNECTIONS.insert().values(
+        create_connection_statement = insert(INSTITUTION_CONNECTIONS).values(
             institution_id=connection_data.institution_id,
             user_id=connection_data.user_id,
             username=connection_data.username,
@@ -33,16 +32,21 @@ class InstitutionRepo(IInstitutionRepo):
             is_active=connection_data.is_active,
         )
 
-        try:
-            await self.db.execute(create_connection_statement)
-        except asyncpg.exceptions.UniqueViolationError:
-            raise await pelleum_errors.PelleumErrors(
-                detail=f"User with user_id, {connection_data.user_id}, already has an account connection with the institution, {connection_data.institution_id}"
-            ).unique_constraint()
+        upsert_stmt = create_connection_statement.on_conflict_do_update(
+            index_elements=[INSTITUTION_CONNECTIONS.c.user_id, INSTITUTION_CONNECTIONS.c.institution_id],
+            set_=dict(
+                username=connection_data.username,
+                password=connection_data.password,
+                json_web_token=connection_data.json_web_token,
+                refresh_token=connection_data.refresh_token,
+                is_active=connection_data.is_active
+            )
+        )
+
+        new_connection_id = await self.db.execute(upsert_stmt)
 
         return await self.retrieve_institution_connection(
-            user_id=connection_data.user_id,
-            institution_id=connection_data.institution_id,
+            connection_id=new_connection_id
         )
 
     async def retrieve_institution(
@@ -138,6 +142,7 @@ class InstitutionRepo(IInstitutionRepo):
     async def retrieve_many_institution_connections(
         self,
         query_params: institutions.RetrieveManyConnectionsRepoAdapter,
+        skip_locked: int = False,
         page_number: int = 1,
         page_size: int = 10000,
     ) -> List[institutions.ConnectionJoinInstitutionJoinPortfolio]:
@@ -181,10 +186,12 @@ class InstitutionRepo(IInstitutionRepo):
             .select_from(j)
             .where(and_(*conditions))
             .limit(page_size)
-            # .with_for_update(skip_locked=True)
             .offset((page_number - 1) * page_size)
             .order_by(desc(INSTITUTION_CONNECTIONS.c.created_at))
         )
+
+        if skip_locked:
+            query = query.with_for_update(skip_locked=True)
 
         query_results = await self.db.fetch_all(query)
 

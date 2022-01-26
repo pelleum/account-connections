@@ -5,6 +5,7 @@ from typing import List
 from databases import Database
 
 from app.dependencies import logger
+from app.settings import settings
 from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
 from app.usecases.interfaces.services.institution_service import IInstitutionService
 from app.usecases.schemas import institutions
@@ -24,6 +25,7 @@ class RefreshTokensTask:
         self.institution_services = institution_services
 
     async def start_task(self):
+        await asyncio.sleep(10)
         while True:
             try:
                 await self.task()
@@ -32,7 +34,7 @@ class RefreshTokensTask:
             except Exception as e:  # pylint: disable = broad-except
                 logger.exception(e)
 
-            await asyncio.sleep(60 * 60 * 24)
+            await asyncio.sleep(settings.refresh_tokens_task_frequency)
 
     async def task(self):
         """Refresh tokens for all linked brokerages that require it."""

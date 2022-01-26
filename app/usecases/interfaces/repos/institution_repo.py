@@ -6,7 +6,7 @@ from app.usecases.schemas import institutions
 
 class IInstitutionRepo(ABC):
     @abstractmethod
-    async def create(
+    async def upsert(
         self, connection_data: institutions.CreateConnectionRepoAdapter
     ) -> institutions.InstitutionConnection:
         """Creates connection data"""
@@ -43,6 +43,7 @@ class IInstitutionRepo(ABC):
     async def retrieve_many_institution_connections(
         self,
         query_params: institutions.RetrieveManyConnectionsRepoAdapter,
+        skip_locked: int = False,
         page_number: int = 1,
         page_size: int = 10000,
     ) -> List[institutions.ConnectionJoinInstitutionJoinPortfolio]:

@@ -4,9 +4,11 @@ from app.libraries import pelleum_errors
 from app.settings import settings
 from app.usecases.interfaces.clients.robinhood import IRobinhoodClient
 from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
+from app.usecases.interfaces.repos.portfolio_repo import IPortfolioRepo
 from app.usecases.interfaces.services.encryption_service import IEncryptionService
 from app.usecases.interfaces.services.institution_service import IInstitutionService
 from app.usecases.schemas import institutions, robinhood
+from app.usecases.schemas.portfolios import UpsertAssetRepoAdapter
 
 
 class RobinhoodService(IInstitutionService):
@@ -14,11 +16,13 @@ class RobinhoodService(IInstitutionService):
         self,
         robinhood_client: IRobinhoodClient,
         institution_repo: IInstitutionRepo,
+        portfolio_repo: IPortfolioRepo,
         encryption_service: IEncryptionService,
         # Add ILogger here!
     ):
         self.robinhood_client = robinhood_client
         self._insitution_repo = institution_repo
+        self.portfolio_repo = portfolio_repo
         self.encryption_service = encryption_service
         self.institution_name = "Robinhood"
 
@@ -66,45 +70,30 @@ class RobinhoodService(IInstitutionService):
                 successful_login_response = robinhood.SuccessfulLoginResponse(
                     **robinhood_json_response
                 )
-                if previous_connection:
-                    connection = await self.__update_credentials(
-                        connection_id=previous_connection.connection_id,
-                        successful_login_response=successful_login_response,
-                    )
-                else:
-                    connection = await self.__save_credentials(
-                        user_id=user_id,
-                        institution_id=institution_id,
-                        login_credentials=credentials,
-                        successful_login_response=successful_login_response,
-                    )
 
-                return robinhood.CreateOrUpdateAssetsOnLogin(
-                    action=robinhood.LoginAction.UPDATE
-                    if previous_connection
-                    else robinhood.LoginAction.CREATE,
-                    brokerage_portfolio=await self.get_recent_holdings(
-                        encrypted_json_web_token=connection.json_web_token
-                    ),
+                # 5. Upsert institution connection in our database
+                connection = await self.__upsert_institution_connection(
+                    user_id=user_id,
+                    institution_id=institution_id,
+                    login_credentials=credentials,
+                    successful_login_response=successful_login_response,
                 )
+
+                # 6. Get most recent holdings
+                recent_holdings = await self.get_recent_holdings(
+                    encrypted_json_web_token=connection.json_web_token
+                )
+
+                # 7. Upsert assets in our database
+                return await self.__upsert_assets(user_id=user_id, institution_id=institution_id, holdings=recent_holdings)
+
 
         # 5. For users with 2FA, save or update credentials and retrun Robinhood response
-        if previous_connection:
-            if (
-                previous_connection.username != credentials.username
-                or previous_connection.password != credentials.password
-            ):
-                # Update account-connection object in database
-                await self.__update_credentials(
-                    login_credentials=credentials,
-                    connection_id=previous_connection.connection_id,
-                )
-        else:
-            await self.__save_credentials(
-                login_credentials=credentials,
-                user_id=user_id,
-                institution_id=institution_id,
-            )
+        _ = await self.__upsert_institution_connection(
+            user_id=user_id,
+            institution_id=institution_id,
+            login_credentials=credentials,
+        )
 
         return robinhood_json_response
 
@@ -156,7 +145,8 @@ class RobinhoodService(IInstitutionService):
             if verification_proof.sms_code
             else None,
         )
-
+        
+        # 5. Send login request
         # A previous connection exists, but it's not active, so get new access token
         if verification_proof.challenge_id:
             # Send request to supply challenge_id and code (pass the challenge)
@@ -174,17 +164,20 @@ class RobinhoodService(IInstitutionService):
             response_json = await self.robinhood_client.login(payload=payload)
 
         successful_login_response = robinhood.SuccessfulLoginResponse(**response_json)
-        # Update connection in our database
-        updated_connection: institutions.InstitutionConnection = (
-            await self.__update_credentials(
-                successful_login_response=successful_login_response,
-                connection_id=previous_connection.connection_id,
-            )
+
+        # 6. Upsert connection in our database
+        connection = await self.__upsert_institution_connection(
+            user_id=user_id,
+            institution_id=institution_id,
+            successful_login_response=successful_login_response,
         )
-        # Retrieve and save our most recent holdings
-        return await self.get_recent_holdings(
-            encrypted_json_web_token=updated_connection.json_web_token
+        # 7. Retrieve and save our most recent holdings
+        recent_holdings = await self.get_recent_holdings(
+            encrypted_json_web_token=connection.json_web_token
         )
+        
+        # 8. Upsert holdings in our database
+        await self.__upsert_assets(user_id=user_id, institution_id=institution_id, holdings=recent_holdings.holdings)
 
     async def get_recent_holdings(
         self, encrypted_json_web_token: str
@@ -254,14 +247,33 @@ class RobinhoodService(IInstitutionService):
             holdings=user_holdings, insitution_name=self.institution_name
         )
 
-    async def __save_credentials(
+
+    async def __upsert_assets(self, user_id: str, institution_id: str, holdings: institutions.UserBrokerageHoldings) -> None:
+        """Save or update asssets in our database"""
+        for asset in holdings:
+            await self.portfolio_repo.upsert_asset(
+                new_asset=UpsertAssetRepoAdapter(
+                    average_buy_price=asset.average_buy_price
+                    if asset.average_buy_price
+                    else None,
+                    user_id=user_id,
+                    institution_id=institution_id,
+                    name=asset.asset_name,
+                    asset_symbol=asset.asset_symbol,
+                    quantity=asset.quantity,
+                )
+            )
+
+    
+    async def __upsert_institution_connection(
         self,
         user_id: str,
         institution_id: str,
         login_credentials: Optional[institutions.UserCredentials] = None,
         successful_login_response: Optional[robinhood.SuccessfulLoginResponse] = None,
     ) -> institutions.InstitutionConnection:
-        """Saves user's Robinhood credentials in our database"""
+        """Saves or update institution connection in our database."""
+
 
         if login_credentials:
             encrypted_username = await self.encryption_service.encrypt(
@@ -279,12 +291,13 @@ class RobinhoodService(IInstitutionService):
                 secret=successful_login_response.refresh_token
             )
 
-        return await self._insitution_repo.create(
+
+        return await self._insitution_repo.upsert(
             connection_data=institutions.CreateConnectionRepoAdapter(
                 institution_id=institution_id,
                 user_id=user_id,
-                username=encrypted_username,
-                password=encrypted_password,
+                username=encrypted_username if login_credentials else None,
+                password=encrypted_password if login_credentials else None,
                 json_web_token=encrypted_json_web_token
                 if successful_login_response
                 else None,
@@ -295,46 +308,6 @@ class RobinhoodService(IInstitutionService):
             )
         )
 
-    async def __update_credentials(
-        self,
-        connection_id: int,
-        login_credentials: Optional[institutions.UserCredentials] = None,
-        successful_login_response: Optional[robinhood.SuccessfulLoginResponse] = None,
-    ) -> Optional[institutions.InstitutionConnection]:
-        """Updates Robinhood user's credentials in our database"""
-
-        if login_credentials:
-            encrypted_username = await self.encryption_service.encrypt(
-                secret=login_credentials.username
-            )
-            encrypted_password = await self.encryption_service.encrypt(
-                secret=login_credentials.password
-            )
-
-            await self._insitution_repo.update_institution_connection(
-                connection_id=connection_id,
-                updated_connection=institutions.UpdateConnectionRepoAdapter(
-                    username=encrypted_username,
-                    password=encrypted_password,
-                ),
-            )
-
-        if successful_login_response:
-            encrypted_json_web_token = await self.encryption_service.encrypt(
-                secret=successful_login_response.access_token
-            )
-            encrypted_refresh_token = await self.encryption_service.encrypt(
-                secret=successful_login_response.refresh_token
-            )
-
-            return await self._insitution_repo.update_institution_connection(
-                connection_id=connection_id,
-                updated_connection=institutions.UpdateConnectionRepoAdapter(
-                    is_active=True,
-                    json_web_token=encrypted_json_web_token,
-                    refresh_token=encrypted_refresh_token,
-                ),
-            )
 
     async def get_tracked_instruments(
         self, robinhood_instruments: List[robinhood.PositionData]
