@@ -24,8 +24,8 @@ class Settings(BaseSettings):
 
     encryption_secret_key: str
 
-    asset_update_task_frequency: int = 20
-    refresh_tokens_task_frequency: int = 20
+    asset_update_task_frequency: int = 3600 * 24
+    refresh_tokens_task_frequency: int = 3600 * 24
 
     class Config:
         env_file = DOTENV_FILE
