@@ -85,7 +85,7 @@ class RobinhoodService(IInstitutionService):
                 )
 
                 # 7. Upsert assets in our database
-                return await self.__upsert_assets(user_id=user_id, institution_id=institution_id, holdings=recent_holdings)
+                return await self.__upsert_assets(user_id=user_id, institution_id=institution_id, holdings=recent_holdings.holdings)
 
 
         # 5. For users with 2FA, save or update credentials and retrun Robinhood response
