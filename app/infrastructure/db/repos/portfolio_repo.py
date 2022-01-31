@@ -30,15 +30,18 @@ class PortfolioRepo(IPortfolioRepo):
             is_up_to_date=True,
         )
 
-
         upsert_stmt = asset_insert_statement.on_conflict_do_update(
-            index_elements=[ASSETS.c.user_id, ASSETS.c.asset_symbol, ASSETS.c.institution_id],
+            index_elements=[
+                ASSETS.c.user_id,
+                ASSETS.c.asset_symbol,
+                ASSETS.c.institution_id,
+            ],
             set_=dict(
                 position_value=new_asset.position_value,
                 quantity=new_asset.quantity,
                 average_buy_price=new_asset.average_buy_price,
-                total_contribution=new_asset.total_contribution
-            )
+                total_contribution=new_asset.total_contribution,
+            ),
         )
 
         await self.db.execute(upsert_stmt)
@@ -128,9 +131,26 @@ class PortfolioRepo(IPortfolioRepo):
         results = await self.db.fetch_all(query)
         return [portfolios.AssetInDB(**result) for result in results]
 
-    async def delete_asset(self, asset_id: int) -> None:
-        """Delete asset"""
+    async def delete(
+        self,
+        asset_id: Optional[int]=None,
+        users_institution: Optional[portfolios.UsersInstitutionRepoAdapter]=None,
+    ) -> None:
+        """Delete asset(s)"""
 
-        delete_statement = delete(ASSETS).where(ASSETS.c.asset_id == asset_id)
+        conditions = []
+
+        if asset_id:
+            conditions.append(ASSETS.c.asset_id == asset_id)
+
+        if users_institution:
+            conditions.extend(
+                [
+                    ASSETS.c.user_id == users_institution.user_id,
+                    ASSETS.c.institution_id == users_institution.institution_id,
+                ]
+            )
+
+        delete_statement = delete(ASSETS).where(and_(*conditions))
 
         await self.db.execute(delete_statement)

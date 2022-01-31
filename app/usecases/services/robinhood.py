@@ -85,8 +85,11 @@ class RobinhoodService(IInstitutionService):
                 )
 
                 # 7. Upsert assets in our database
-                return await self.__upsert_assets(user_id=user_id, institution_id=institution_id, holdings=recent_holdings.holdings)
-
+                return await self.__upsert_assets(
+                    user_id=user_id,
+                    institution_id=institution_id,
+                    holdings=recent_holdings.holdings,
+                )
 
         # 5. For users with 2FA, save or update credentials and retrun Robinhood response
         _ = await self.__upsert_institution_connection(
@@ -145,7 +148,7 @@ class RobinhoodService(IInstitutionService):
             if verification_proof.sms_code
             else None,
         )
-        
+
         # 5. Send login request
         # A previous connection exists, but it's not active, so get new access token
         if verification_proof.challenge_id:
@@ -175,9 +178,13 @@ class RobinhoodService(IInstitutionService):
         recent_holdings = await self.get_recent_holdings(
             encrypted_json_web_token=connection.json_web_token
         )
-        
+
         # 8. Upsert holdings in our database
-        await self.__upsert_assets(user_id=user_id, institution_id=institution_id, holdings=recent_holdings.holdings)
+        await self.__upsert_assets(
+            user_id=user_id,
+            institution_id=institution_id,
+            holdings=recent_holdings.holdings,
+        )
 
     async def get_recent_holdings(
         self, encrypted_json_web_token: str
@@ -247,8 +254,12 @@ class RobinhoodService(IInstitutionService):
             holdings=user_holdings, insitution_name=self.institution_name
         )
 
-
-    async def __upsert_assets(self, user_id: str, institution_id: str, holdings: institutions.UserBrokerageHoldings) -> None:
+    async def __upsert_assets(
+        self,
+        user_id: str,
+        institution_id: str,
+        holdings: institutions.UserBrokerageHoldings,
+    ) -> None:
         """Save or update asssets in our database"""
         for asset in holdings:
             await self.portfolio_repo.upsert_asset(
@@ -264,7 +275,6 @@ class RobinhoodService(IInstitutionService):
                 )
             )
 
-    
     async def __upsert_institution_connection(
         self,
         user_id: str,
@@ -273,7 +283,6 @@ class RobinhoodService(IInstitutionService):
         successful_login_response: Optional[robinhood.SuccessfulLoginResponse] = None,
     ) -> institutions.InstitutionConnection:
         """Saves or update institution connection in our database."""
-
 
         if login_credentials:
             encrypted_username = await self.encryption_service.encrypt(
@@ -291,7 +300,6 @@ class RobinhoodService(IInstitutionService):
                 secret=successful_login_response.refresh_token
             )
 
-
         return await self._insitution_repo.upsert(
             connection_data=institutions.CreateConnectionRepoAdapter(
                 institution_id=institution_id,
@@ -307,7 +315,6 @@ class RobinhoodService(IInstitutionService):
                 is_active=bool(successful_login_response),
             )
         )
-
 
     async def get_tracked_instruments(
         self, robinhood_instruments: List[robinhood.PositionData]

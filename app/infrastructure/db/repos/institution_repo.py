@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from databases import Database
-from sqlalchemy import and_, desc, select
+from sqlalchemy import and_, delete, desc, select
 from sqlalchemy.dialects.postgresql import insert
 
 from app.infrastructure.db.models.institutions import (
@@ -33,14 +33,17 @@ class InstitutionRepo(IInstitutionRepo):
         )
 
         upsert_stmt = create_connection_statement.on_conflict_do_update(
-            index_elements=[INSTITUTION_CONNECTIONS.c.user_id, INSTITUTION_CONNECTIONS.c.institution_id],
+            index_elements=[
+                INSTITUTION_CONNECTIONS.c.user_id,
+                INSTITUTION_CONNECTIONS.c.institution_id,
+            ],
             set_=dict(
                 username=connection_data.username,
                 password=connection_data.password,
                 json_web_token=connection_data.json_web_token,
                 refresh_token=connection_data.refresh_token,
-                is_active=connection_data.is_active
-            )
+                is_active=connection_data.is_active,
+            ),
         )
 
         new_connection_id = await self.db.execute(upsert_stmt)
@@ -224,3 +227,12 @@ class InstitutionRepo(IInstitutionRepo):
         query_results = await self.db.fetch_all(query)
 
         return [institutions.RobinhoodInstrument(**result) for result in query_results]
+
+    async def delete(self, connection_id: int) -> None:
+        """Delete connection"""
+
+        delete_statement = delete(INSTITUTION_CONNECTIONS).where(
+            INSTITUTION_CONNECTIONS.c.connection_id == connection_id
+        )
+
+        await self.db.execute(delete_statement)

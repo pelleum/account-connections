@@ -60,3 +60,7 @@ class IInstitutionRepo(ABC):
         self, instrument_ids: list
     ) -> List[institutions.RobinhoodInstrument]:
         """Retrieve many instruments by supplied instrument_ids list"""
+
+    @abstractmethod
+    async def delete(self, institution_id: int) -> None:
+        """Delete connection"""

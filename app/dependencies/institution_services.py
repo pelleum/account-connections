@@ -4,7 +4,11 @@ import aiohttp
 from fastapi import Depends, Path
 from pydantic import constr
 
-from app.dependencies import get_client_session, get_institution_repo, get_portfolio_repo
+from app.dependencies import (
+    get_client_session,
+    get_institution_repo,
+    get_portfolio_repo,
+)
 from app.infrastructure.clients.robinhood import RobinhoodClient
 from app.libraries import pelleum_errors
 from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
@@ -18,7 +22,7 @@ async def get_institution_service(
     institution_id: constr(max_length=100) = Path(...),
     client_session: aiohttp.client.ClientSession = Depends(get_client_session),
     institution_repo: IInstitutionRepo = Depends(get_institution_repo),
-    portfolio_repo: IPortfolioRepo = Depends(get_portfolio_repo)
+    portfolio_repo: IPortfolioRepo = Depends(get_portfolio_repo),
 ) -> IInstitutionService:
     """Return institution service based on institution_id"""
 

@@ -41,5 +41,9 @@ class IPortfolioRepo(ABC):
         """Retrieve all assets in a linked brokerage by user_id"""
 
     @abstractmethod
-    async def delete_asset(self, asset_id: int) -> None:
-        """Delete asset"""
+    async def delete(
+        self,
+        asset_id: Optional[int],
+        users_institution: Optional[portfolios.UsersInstitutionRepoAdapter],
+    ) -> None:
+        """Delete asset(s)"""

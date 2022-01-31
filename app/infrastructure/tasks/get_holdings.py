@@ -5,11 +5,11 @@ from typing import List
 from databases import Database
 
 from app.dependencies import logger
+from app.settings import settings
 from app.usecases.interfaces.repos.institution_repo import IInstitutionRepo
 from app.usecases.interfaces.repos.portfolio_repo import IPortfolioRepo
 from app.usecases.interfaces.services.institution_service import IInstitutionService
 from app.usecases.schemas import institutions, portfolios
-from app.settings import settings
 
 # import yfinance as yahoo_finance
 
@@ -50,7 +50,7 @@ class GetHoldingsTask:
                 query_params=institutions.RetrieveManyConnectionsRepoAdapter(
                     is_active=True
                 ),
-                skip_locked=True
+                skip_locked=True,
             )
         )
         logger.info(
@@ -152,7 +152,7 @@ class GetHoldingsTask:
 
         # 3. For each asset the user no longer owns, delete from our database
         for asset in assets_to_delete_from_db:
-            await self._portfolio_repo.delete_asset(asset_id=asset.asset_id)
+            await self._portfolio_repo.delete(asset_id=asset.asset_id)
 
         # 4. For each asset we're not tracking, insert asset into our database
         for asset in assets_to_add_to_db:

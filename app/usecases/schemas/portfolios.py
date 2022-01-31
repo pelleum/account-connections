@@ -105,3 +105,10 @@ class AssetInDB(UpsertAssetRepoAdapter):
         description="The time and date that the asset was updated in our database.",
         example="2021-10-19 04:56:14.02395",
     )
+
+
+class UsersInstitutionRepoAdapter(BaseModel):
+    """Delete RepoAdapter"""
+
+    user_id: int
+    institution_id: str
