@@ -43,7 +43,7 @@ class IPortfolioRepo(ABC):
     @abstractmethod
     async def delete(
         self,
-        asset_id: Optional[int],
-        users_institution: Optional[portfolios.UsersInstitutionRepoAdapter],
+        asset_id: Optional[int]=None,
+        users_institution: Optional[portfolios.UsersInstitutionRepoAdapter]=None,
     ) -> None:
         """Delete asset(s)"""

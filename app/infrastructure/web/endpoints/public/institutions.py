@@ -74,7 +74,7 @@ async def retrieve_active_institution_connections(
 
 @institution_router.delete(
     "/{institution_id}",
-    status_code=204,
+    status_code=200,
     response_model=None,
 )
 async def delete_institution_connection(
