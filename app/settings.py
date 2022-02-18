@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     server_port: int
     server_prefix: str = ""
 
-    database_url: str
+    db_url: str
 
     token_url: str
     json_web_token_secret: str
