@@ -133,8 +133,8 @@ class PortfolioRepo(IPortfolioRepo):
 
     async def delete(
         self,
-        asset_id: Optional[int]=None,
-        users_institution: Optional[portfolios.UsersInstitutionRepoAdapter]=None,
+        asset_id: Optional[int] = None,
+        users_institution: Optional[portfolios.UsersInstitutionRepoAdapter] = None,
     ) -> None:
         """Delete asset(s)"""
 

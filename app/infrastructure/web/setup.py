@@ -11,8 +11,7 @@ from app.infrastructure.tasks.events.startup import (
     start_ongoing_token_refresh,
 )
 from app.infrastructure.web.endpoints import health
-from app.infrastructure.web.endpoints.private import example as example_private
-from app.infrastructure.web.endpoints.public import institutions
+from app.infrastructure.web.endpoints.private import institutions
 from app.settings import settings
 
 
@@ -21,8 +20,7 @@ def setup_app():
         title="Account Connections API",
         description="The following are endpoints for the Pelleum account-connections service.",
     )
-    app.include_router(institutions.institution_router, prefix="/public/institutions")
-    app.include_router(example_private.example_private_router, prefix="/private")
+    app.include_router(institutions.institution_router, prefix="/private/institutions")
     app.include_router(health.health_router, prefix="/health")
 
     return app

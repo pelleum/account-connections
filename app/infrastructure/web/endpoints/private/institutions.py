@@ -30,9 +30,7 @@ async def get_all_supported_institutions(
 ) -> institutions.SupportedInstitutionsResponse:
     """Retrieve all Pelleum supported institutions"""
 
-    supported_institutions: List[
-        institutions.Institution
-    ] = await institution_repo.retrieve_all_institutions()
+    supported_institutions = await institution_repo.retrieve_all_institutions()
 
     return institutions.SupportedInstitutionsResponse(
         records=institutions.SupportedInstitutions(
@@ -86,11 +84,9 @@ async def delete_institution_connection(
     """Deactivate a user's connected account"""
 
     # 1. Ensure connection exists
-    connection: institutions.InstitutionConnection = (
-        await institution_repo.retrieve_institution_connection(
-            user_id=authorized_user.user_id,
-            institution_id=institution_id,
-        )
+    connection = await institution_repo.retrieve_institution_connection(
+        user_id=authorized_user.user_id,
+        institution_id=institution_id,
     )
 
     if not connection:
