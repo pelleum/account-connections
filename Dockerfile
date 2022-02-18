@@ -10,9 +10,7 @@ COPY . /app
 
 # Database Environment Variables
 ENV DB_URL=postgres://postgres:postgres@localhost:5432/pelleum-dev
-
-# JWT Environment Variables
-ENV JSON_WEB_TOKEN_SECRET=nicetry
+ENV SCHEMA=Something
 
 # Encryption Key
 ENV ENCRYPTION_SECRET_KEY=nope
@@ -21,10 +19,10 @@ ENV ENCRYPTION_SECRET_KEY=nope
 ENV ROBINHOOD_CLIENT_ID=thisismyrobinhoodclientid
 ENV ROBINHOOD_DEVICE_TOKEN=this-is-my-device-token
 
-# Non-secret Environment Variables
+# Auth Environment Variables
+ENV JSON_WEB_TOKEN_SECRET=nicetry
 ENV TOKEN_URL=/public/auth/users/login
 ENV JSON_WEB_TOKEN_ALGORITHM=Something
-ENV SCHEMA=Something
 
 # Account-Connections API port
 ENV SERVER_PORT=1201
