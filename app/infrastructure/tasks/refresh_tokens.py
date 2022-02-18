@@ -25,7 +25,6 @@ class RefreshTokensTask:
         self.institution_services = institution_services
 
     async def start_task(self):
-        await asyncio.sleep(10)
         while True:
             try:
                 await self.task()
