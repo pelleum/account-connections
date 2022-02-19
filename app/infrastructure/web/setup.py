@@ -19,6 +19,7 @@ def setup_app():
     app = FastAPI(
         title="Account Connections API",
         description="The following are endpoints for the Pelleum account-connections service.",
+        openapi_url=settings.openapi_url,
     )
     app.include_router(institutions.institution_router, prefix="/private/institutions")
     app.include_router(health.health_router, prefix="/health")

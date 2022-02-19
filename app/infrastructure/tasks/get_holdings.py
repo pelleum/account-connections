@@ -28,7 +28,7 @@ class GetHoldingsTask:
         self.institution_services = institution_services
 
     async def start_task(self):
-        await asyncio.sleep(60*60*12)
+        await asyncio.sleep(60 * 60 * 12)
         while True:
             try:
                 await self.task()

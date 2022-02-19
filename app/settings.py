@@ -7,11 +7,12 @@ DOTENV_FILE = ".env" if path.isfile(".env") else None
 
 class Settings(BaseSettings):
     application_name: str = "account-connections"
-    environment: str = "unknown"
+    environment: str = "development"
     log_level: str = "info"
     server_host: str = "0.0.0.0"
     server_port: int
     server_prefix: str = ""
+    openapi_url: str = "/openapi.json"
 
     db_url: str
 

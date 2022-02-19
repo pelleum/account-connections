@@ -24,8 +24,9 @@ ENV JSON_WEB_TOKEN_SECRET=nicetry
 ENV TOKEN_URL=/public/auth/users/login
 ENV JSON_WEB_TOKEN_ALGORITHM=Something
 
-# Account-Connections API port
+# Server Environment Variables
 ENV SERVER_PORT=1201
+ENV OPENAPI_URL="/openapi.json"
 
 EXPOSE $SERVER_PORT
 
