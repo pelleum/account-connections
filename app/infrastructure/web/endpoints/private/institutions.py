@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, List, Mapping, Union
+from typing import Any, Mapping, Union
 
 from fastapi import APIRouter, Body, Depends, Path
 from pydantic import constr
@@ -159,10 +159,13 @@ async def verify_login_with_code(
 ) -> institutions.SuccessfulConnectionResponse:
     """Verify login to institution with verifaction code"""
 
-    if not body.sms_code and not body.challenge_id:
-        raise pelleum_errors.PelleumErrors(
-            detail="Must send either sms_code or challenge_id (or both) to this endpoint."
-        ).general_bad_request()
+    # 1. Ensure that either with_challenge or without_challenge was supplied
+    if not body.with_challenge and not body.without_challenge:
+        raise await pelleum_errors.PelleumErrors().general_bad_request()
+
+    # 2. Ensure that both with_challenge and without_challange were not supplied
+    if body.with_challenge and body.without_challenge:
+        raise await pelleum_errors.PelleumErrors().general_bad_request()
 
     try:
         await institution_service.send_multifactor_auth_code(
