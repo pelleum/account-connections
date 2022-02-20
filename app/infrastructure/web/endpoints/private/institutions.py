@@ -161,7 +161,7 @@ async def verify_login_with_code(
 
     if not body.sms_code and not body.challenge_id:
         raise pelleum_errors.PelleumErrors(
-            detail="Must send either sms_code or challenge_id to this endpoint."
+            detail="Must send either sms_code or challenge_id (or both) to this endpoint."
         ).general_bad_request()
 
     try:

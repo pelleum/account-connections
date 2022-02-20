@@ -89,15 +89,15 @@ class RefreshTokensTask:
                     % error
                 )
                 continue
-
-            # 3. Save new tokens in database
-            await self._institution_repo.update_institution_connection(
-                connection_id=account_connection.connection_id,
-                updated_connection=institutions.UpdateConnectionRepoAdapter(
-                    json_web_token=encrypted_refreshed_tokens.encrypted_json_web_token,
-                    refresh_token=encrypted_refreshed_tokens.encrypted_refresh_token,
-                ),
-            )
+            else:
+                # 3. Save new tokens in database
+                await self._institution_repo.update_institution_connection(
+                    connection_id=account_connection.connection_id,
+                    updated_connection=institutions.UpdateConnectionRepoAdapter(
+                        json_web_token=encrypted_refreshed_tokens.encrypted_json_web_token,
+                        refresh_token=encrypted_refreshed_tokens.encrypted_refresh_token,
+                    ),
+                )
 
         task_end_time = time()
 
