@@ -159,14 +159,6 @@ async def verify_login_with_code(
 ) -> institutions.SuccessfulConnectionResponse:
     """Verify login to institution with verifaction code"""
 
-    print("\n\n\n\n", body)
-
-    if body.without_challenge:
-        print("\n\nWITHOUT CHALLENGE - sms_code in http handler:", body.without_challenge.sms_code, "\n\n")
-    if body.with_challenge:
-        print("\n\nWITH CHALLENGE - challenge_id in http handler:", body.with_challenge.challenge_id, "\n\n")
-        print("\n\nWITH CHALLENGE - sms_code in http handler:", body.with_challenge.sms_code, "\n\n")
-
     # 1. Ensure that either with_challenge or without_challenge was supplied
     if not body.with_challenge and not body.without_challenge:
         raise await pelleum_errors.PelleumErrors().general_bad_request()
