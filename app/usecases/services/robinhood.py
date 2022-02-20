@@ -144,23 +144,23 @@ class RobinhoodService(IInstitutionService):
             scope="internal",
             challenge_type="sms",
             device_token=settings.robinhood_device_token,
-            mfa_code=verification_proof.sms_code
-            if verification_proof.sms_code
-            else None,
+            mfa_code=verification_proof.with_challenge.sms_code
+            if isinstance(verification_proof, institutions.MultiFactorWithChallenge)
+            else verification_proof.without_challenge.sms_code,
         )
 
         # 5. Send login request
         # A previous connection exists, but it's not active, so get new access token
-        if verification_proof.challenge_id:
+        if isinstance(verification_proof, institutions.MultiFactorWithChallenge):
             # Send request to supply challenge_id and code (pass the challenge)
             await self.robinhood_client.respond_to_challenge(
-                challenge_code=verification_proof.sms_code,
-                challenge_id=verification_proof.challenge_id,
+                challenge_code=verification_proof.with_challenge.sms_code,
+                challenge_id=verification_proof.with_challenge.challenge_id,
             )
             # Send login request with challenge_id in the header
             response_json = await self.robinhood_client.login(
                 payload=payload,
-                challenge_id=verification_proof.challenge_id,
+                challenge_id=verification_proof.with_challenge.challenge_id,
             )
         else:
             # Challenge not needed, proceed with mfa

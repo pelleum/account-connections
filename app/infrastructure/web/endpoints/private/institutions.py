@@ -159,10 +159,21 @@ async def verify_login_with_code(
 ) -> institutions.SuccessfulConnectionResponse:
     """Verify login to institution with verifaction code"""
 
-    if not body.sms_code and not body.challenge_id:
-        raise pelleum_errors.PelleumErrors(
-            detail="Must send either sms_code or challenge_id to this endpoint."
-        ).general_bad_request()
+    # 1. Ensure that either with_challenge or without_challenge was supplied
+    if not body.with_challenge and not body.with_challenge:
+        raise pelleum_errors.PelleumErrors().general_bad_request()
+
+    # 2. Ensure that both with_challenge and without_challange were not supplied
+    if body.with_challenge and body.without_challenge:
+        raise pelleum_errors.PelleumErrors().general_bad_request()
+
+    print("\n\nsms_code in http handler:", body.without_challenge.sms_code, "\n\n")
+    if isinstance(body, institutions.MultiFactorWithChallenge):
+        print("\n\nchallenge_id in http handler:", body.with_challenge.sms_code, "\n\n")
+
+    print("\n\n\nHELLO WE GOT HERE\n\n\n")
+
+    raise
 
     try:
         await institution_service.send_multifactor_auth_code(

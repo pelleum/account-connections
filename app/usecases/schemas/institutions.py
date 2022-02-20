@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from pydantic import BaseModel, Field, constr
 
@@ -19,17 +19,30 @@ class LoginRequest(BaseModel):
     )
 
 
-class MultiFactorAuthCodeRequest(BaseModel):
-    sms_code: Optional[constr(max_length=10)] = Field(
-        None,
+class MultiFactorWithChallenge(BaseModel):
+    sms_code: constr(max_length=10) = Field(
+        ...,
         description="The multifactor (sms) authentication code sent to the user's phone.",
         example="149837",
     )
-    challenge_id: Optional[constr(max_length=100)] = Field(
-        None,
+    challenge_id: constr(max_length=100) = Field(
+        ...,
         description="The unique identifier for the challenge that Robinhood issues to those who have 2FA disabled on their accounts.",
         example="ca3cf668-404c-49d2-8510-ea9948ff66aa",
     )
+
+
+class MultiFactorWithoutChallenge(BaseModel):
+    sms_code: constr(max_length=10) = Field(
+        ...,
+        description="The multifactor (sms) authentication code sent to the user's phone.",
+        example="149837",
+    )
+
+
+class MultiFactorAuthCodeRequest(BaseModel):
+    with_challenge: Optional[MultiFactorWithChallenge] = None
+    without_challenge: Optional[MultiFactorWithoutChallenge] = None
 
 
 class UserCredentials(LoginRequest):
