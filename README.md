@@ -20,3 +20,14 @@ This repository contains code relevant to linking external brokerage accounts to
 ## Test API calls
 - Can use Postman to test calls (Can get Postman collection from senior engineer)
 - Can also test calls via [API Docs](http://0.0.0.0:1201/docs)
+
+## Deploy docker container
+- Run `docker login`, get credentials from bitwarden
+- Run `docker build -t pelleum/account-connections .` to build docker container
+- Run `docker push pelleum/account-connections` to push to docker hub
+- Verify container is deployed in docker hub
+
+## Deploy cluster in AWS
+- Update account-connections service in AWS console
+- Make sure to use latest version and check Force new deployment box
+- Verify by viewing logs in CloudWatch
