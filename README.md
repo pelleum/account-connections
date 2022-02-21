@@ -5,7 +5,7 @@ This repository contains code relevant to linking external brokerage accounts to
 ### API Endpoints
 This service contains [private API endpoints](https://github.com/pelleum/account-connections/blob/master/app/infrastructure/web/endpoints/private/institutions.py), which the service, [pelleum-api](https://github.com/pelleum/pelleum-api), utilizes to manage users' brokerage account connections.
 
-### Periodic Asynchronous Tasks
+### Periodic, Asynchronous Tasks
 This service also contains 2 periodic, asynchronous tasks. They are as follows:
 1. [JWT Refresh Task](https://github.com/pelleum/account-connections/blob/master/app/infrastructure/tasks/refresh_tokens.py): refreshes each user's brokerage JSON web token every 24 hours. This allows for the user to not have to repeatedly relink his or her brokerage after the initial JSON web token expires.
 2. [User Holdings Update Task](https://github.com/pelleum/account-connections/blob/master/app/infrastructure/tasks/get_holdings.py): Syncs Pelleum-tracked brokerage holdings with the user's brokerage source of truth every 24 hours.
