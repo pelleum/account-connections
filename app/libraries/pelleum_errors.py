@@ -41,7 +41,7 @@ class PelleumErrors:
 
     async def invalid_resource_id(self):
         return HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=self.detail
             if self.detail
             else "The supplied resource ID is invalid.",
