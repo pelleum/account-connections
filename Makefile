@@ -1,8 +1,8 @@
 SHELL := /bin/bash
 
-docker_image = pelleum_api
-docker_username = adamcuculich
-formatted_code := app/ migrations/
+docker_image = account-connections
+docker_username = pelleum
+formatted_code := app/ migrations/ tests/ tasks.py
 
 
 .ONESHELL:
@@ -10,8 +10,10 @@ formatted_code := app/ migrations/
 rev_id = ""
 migration_message = ""
 
-requirements.txt:
-	pip-compile --generate-hashes --output-file=requirements.txt requirements.in
+.PHONY: test run
+
+requirements.txt: requirements.in
+	pip-compile --quiet --generate-hashes --output-file=$@
 
 format:
 	isort $(formatted_code)
@@ -27,14 +29,17 @@ check:
 	black --check $(formatted_code)
 
 build:
-	docker build -t $(docker_image):latest .
+	docker build -t $(docker_username)/$(docker_image):latest .
 
-test:
-	docker run $(docker_image):latest \
-		black --check $(formatted_code)
+# Stop and tear down any containers after tests run
+test: build
+	function removeContainers {
+		docker-compose -p account-connections-continuous-integration rm -s -f test_db
+	}
+	trap removeContainers EXIT
+	docker-compose -p account-connections-continuous-integration run --rm continuous-integration;
 
 push:
-	# check to make sure this is correct ...
 	docker push $(docker_username)/$(docker_image):latest
 
 # TODO: This should have variables to pass to it.

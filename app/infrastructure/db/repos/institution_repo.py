@@ -4,7 +4,7 @@ from databases import Database
 from sqlalchemy import and_, delete, desc, select
 from sqlalchemy.dialects.postgresql import insert
 
-from app.infrastructure.db.models.institutions import (
+from app.infrastructure.db.models.account_connections.institutions import (
     INSTITUTION_CONNECTIONS,
     INSTITUTIONS,
     ROBINHOOD_INSTRUMENTS,

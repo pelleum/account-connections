@@ -4,7 +4,7 @@ from databases import Database
 from sqlalchemy import and_, delete, insert
 from sqlalchemy.dialects.postgresql import insert
 
-from app.infrastructure.db.models.portfolio import ASSETS
+from app.infrastructure.db.models.public.portfolio import ASSETS
 from app.usecases.interfaces.repos.portfolio_repo import IPortfolioRepo
 from app.usecases.schemas import portfolios
 

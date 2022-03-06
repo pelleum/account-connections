@@ -1,3 +1,4 @@
+# Environments
 pyenv/
 .venv/
 venv/
@@ -9,5 +10,51 @@ __pycache__/
 .env.*
 venv
 env/
-make_black_before_pushing_to_github
-tasks.py
+ENV/
+.venv
+
+
+# Environment Variable Files
+env_file.env
+tests.env
+*.env
+.secrets.*
+
+# MacOS
+*.DS_Store
+.AppleDouble
+.LSOverride
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+
+# Packaging
+.Python
+build/
+downloads/
+lib/
+lib64/
+var/
+wheels/
+*.manifest
+*.spec
+
+# Installing Logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test and Coverage
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+coverage.xml
+*.coverage
+.pytest_cache/
+
+# VSCode
+.vscode/
