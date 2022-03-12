@@ -62,5 +62,5 @@ class IInstitutionRepo(ABC):
         """Retrieve many instruments by supplied instrument_ids list"""
 
     @abstractmethod
-    async def delete(self, institution_id: int) -> None:
+    async def delete(self, connection_id: int) -> None:
         """Delete connection"""

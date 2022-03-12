@@ -1,7 +1,7 @@
 import sqlalchemy as sa
 
 from app.infrastructure.db.metadata import METADATA
-from app.infrastructure.db.models.users import USERS
+from app.infrastructure.db.models.public.users import USERS
 
 INSTITUTIONS = sa.Table(
     "institutions",

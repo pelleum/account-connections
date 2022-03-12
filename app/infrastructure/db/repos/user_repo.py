@@ -1,16 +1,39 @@
 from typing import Optional
 
 from databases import Database
+from passlib.context import CryptContext
 from sqlalchemy import and_
 
-from app.infrastructure.db.models.users import USERS
-from app.usecases.interfaces.user_repo import IUserRepo
+from app.infrastructure.db.models.public.users import USERS
+from app.usecases.interfaces.repos.user_repo import IUsersRepo
 from app.usecases.schemas import users
 
 
-class UsersRepo(IUserRepo):
+class UsersRepo(IUsersRepo):
     def __init__(self, db: Database):
         self.db = db
+
+    async def create(
+        self, new_user: users.UserCreate, password_context: CryptContext
+    ) -> users.UserInDB:
+        """Creates user -- only used for unit tests"""
+
+        hashed_password = password_context.hash(new_user.password)
+
+        create_user_insert_stmt = USERS.insert().values(
+            email=new_user.email,
+            username=new_user.username,
+            hashed_password=hashed_password,
+            gender=new_user.gender,
+            birthdate=new_user.birthdate,
+            is_active=True,
+            is_superuser=False,
+            is_verified=False,
+        )
+
+        await self.db.execute(create_user_insert_stmt)
+
+        return await self.retrieve_user_with_filter(username=new_user.username)
 
     async def retrieve_user_with_filter(
         self,

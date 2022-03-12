@@ -2,8 +2,8 @@
 import sqlalchemy as sa
 
 from app.infrastructure.db.metadata import METADATA
-from app.infrastructure.db.models.institutions import INSTITUTIONS
-from app.infrastructure.db.models.users import USERS
+from app.infrastructure.db.models.account_connections.institutions import INSTITUTIONS
+from app.infrastructure.db.models.public.users import USERS
 
 ASSETS = sa.Table(
     "assets",
@@ -13,6 +13,7 @@ ASSETS = sa.Table(
         "user_id",
         sa.Integer,
         sa.ForeignKey(USERS.c.user_id),
+        nullable=False,
         index=True,
     ),
     sa.Column(
@@ -28,9 +29,9 @@ ASSETS = sa.Table(
         index=True,
     ),
     sa.Column("asset_symbol", sa.String, nullable=False),
-    sa.Column("name", sa.String, nullable=False),
+    sa.Column("name", sa.String, nullable=True),
     sa.Column("quantity", sa.Float, nullable=False),
-    sa.Column("position_value", sa.Float, nullable=False),
+    sa.Column("position_value", sa.Float, nullable=True),
     sa.Column("skin_rating", sa.Float, nullable=True),
     sa.Column("average_buy_price", sa.Float, nullable=True),
     sa.Column("total_contribution", sa.Float, nullable=True),

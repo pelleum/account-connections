@@ -4,7 +4,7 @@ from databases import Database
 from sqlalchemy import and_, delete, desc, select
 from sqlalchemy.dialects.postgresql import insert
 
-from app.infrastructure.db.models.institutions import (
+from app.infrastructure.db.models.account_connections.institutions import (
     INSTITUTION_CONNECTIONS,
     INSTITUTIONS,
     ROBINHOOD_INSTRUMENTS,
@@ -53,7 +53,7 @@ class InstitutionRepo(IInstitutionRepo):
         )
 
     async def retrieve_institution(
-        self, name: str = None, institution_id: str = None
+        self, name: Optional[str] = None, institution_id: Optional[str] = None
     ) -> Optional[institutions.Institution]:
         """Retrieve Pelleum supported institution by name or institution_id"""
 
@@ -84,10 +84,10 @@ class InstitutionRepo(IInstitutionRepo):
 
     async def retrieve_institution_connection(
         self,
-        connection_id: int = None,
-        user_id: str = None,
-        institution_id: str = None,
-        is_active: bool = None,
+        connection_id: Optional[int] = None,
+        user_id: Optional[str] = None,
+        institution_id: Optional[str] = None,
+        is_active: Optional[bool] = None,
     ) -> Optional[institutions.InstitutionConnection]:
         """Retrieve signle user-institution connection"""
 

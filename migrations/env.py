@@ -12,10 +12,15 @@ load_dotenv()
 
 # Import Tables
 from app.infrastructure.db.metadata import METADATA
-from app.infrastructure.db.models.institutions import (
+
+# Private Schemas
+from app.infrastructure.db.models.account_connections.institutions import (
     INSTITUTION_CONNECTIONS,
     INSTITUTIONS,
 )
+from app.infrastructure.db.models.public.portfolio import ASSETS
+from app.infrastructure.db.models.public.theses import THESES
+from app.infrastructure.db.models.public.users import USERS
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -60,7 +65,9 @@ def run_migrations_offline():
 
 
 def include_object(object, name, type_, reflected, compare_to):
-    if type_ == "table" and object.schema != getenv("SCHEMA"):
+    if getenv("ENVIRONMENT") == "testing":
+        return True
+    elif type_ == "table" and object.schema != getenv("SCHEMA"):
         return False
     else:
         return True

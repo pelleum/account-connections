@@ -135,9 +135,6 @@ class InstitutionConnection(CreateConnectionRepoAdapter):
     connection_id: int = Field(
         ..., description="The unique identifier for an account connection.", example=1
     )
-    is_active: bool = Field(
-        ..., description="Whether or not the account is currently linked.", example=True
-    )
     created_at: datetime
     updated_at: datetime
 
@@ -172,7 +169,7 @@ class ConnectionInResponse(BaseModel):
     name: str = Field(
         ...,
         description="The name of a Pelleum supported financial institution.",
-        example="098736bd-fd4a-4414-bb27-bc4c87f74e0c",
+        example="Robinhood",
     )
     created_at: datetime
     updated_at: datetime

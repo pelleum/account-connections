@@ -1,6 +1,37 @@
 version: "3.8"
 
 services:
+    account-connections:                    
+        build: .
+        ports:
+        - "1201:1201"
+        container_name: account-connections
+        env_file: 
+        - .env
+        depends_on:
+        - db   
+
+    continuous-integration:
+        container_name: account-connections-continuous-integration
+        image: "pelleum/account-connections"
+        env_file:
+            - tests.env
+        entrypoint: /app/continuous_integration/initiate_tests.sh
+        depends_on:
+            - test_db
+
+    test_db:
+        image: library/postgres:12-alpine
+        environment:
+            - POSTGRES_HOST=db
+            - POSTGRES_PORT=5444
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+            - POSTGRES_DB=pelleum-dev-test
+        ports:
+            - 5444:5444
+        command: -p 5444
+
     db:
         image: library/postgres:12-alpine
         environment:
@@ -11,3 +42,5 @@ services:
             - POSTGRES_DB=pelleum-dev
         ports:
             - 5432:5432
+
+

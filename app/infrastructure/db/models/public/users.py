@@ -10,6 +10,8 @@ USERS = sa.Table(
     sa.Column("email", sa.String, nullable=False, unique=True, index=True),
     sa.Column("username", sa.String, nullable=False, unique=True, index=True),
     sa.Column("hashed_password", sa.String, nullable=False),
+    sa.Column("gender", sa.String, nullable=False),
+    sa.Column("birthdate", sa.Date, nullable=False),
     sa.Column("is_active", sa.Boolean, nullable=False, default=True),
     sa.Column("is_superuser", sa.Boolean, nullable=False, default=False),
     sa.Column("is_verified", sa.Boolean, nullable=False, default=False),
