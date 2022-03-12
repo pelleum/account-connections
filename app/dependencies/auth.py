@@ -5,7 +5,7 @@ from jose import JWTError, jwt
 from app.dependencies import get_users_repo  # pylint: disable = cyclic-import
 from app.libraries import pelleum_errors
 from app.settings import settings
-from app.usecases.interfaces.user_repo import IUserRepo
+from app.usecases.interfaces.repos.user_repo import IUsersRepo
 from app.usecases.schemas import auth
 from app.usecases.schemas.users import UserInDB
 
@@ -31,7 +31,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 
 async def verify_user_exists(username: str):
-    users_repo: IUserRepo = await get_users_repo()
+    users_repo = await get_users_repo()
     user: UserInDB = await users_repo.retrieve_user_with_filter(username=username)
     if user is None:
         raise pelleum_errors.invalid_credentials

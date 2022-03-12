@@ -45,20 +45,18 @@ def set_up_database(context):
 @task
 def tests(context):
     """Runs all tests"""
-    print("\n\nWe got here to running tests!\n\n")
-    # context.run(f"coverage run --source {APP} -m pytest {TESTS} --color=yes")
-    # context.run(f"coverage report --fail-under={MIN_COVERAGE}")
-    # context.run("coverage html")
+    context.run(f"coverage run --source {APP} -m pytest {TESTS} --color=yes")
+    context.run(f"coverage report --fail-under={MIN_COVERAGE}")
+    context.run("coverage html")
 
 
 @task
 def ci(context):
     """Orchestrates continuous integration tasks"""
-    context.run("pwd")
-    _insight_title("LINTING CODE")
-    lint_app(context)
-    _insight_title("CHECKING CODE FORMAT")
-    check_format(context)
+    # _insight_title("LINTING CODE")
+    # lint_app(context)
+    # _insight_title("CHECKING CODE FORMAT")
+    # check_format(context)
     _insight_title("SETTING UP DATABASE")
     set_up_database(context)
     _insight_title("RUNNING TESTS")
