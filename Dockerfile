@@ -9,7 +9,7 @@ RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 COPY . /app
 
 # Database Environment Variables
-ENV DB_URL=postgres://postgres:postgres@localhost:5432/pelleum-dev
+ENV DB_URL=inject_at_deployment
 ENV SCHEMA=Something
 
 # Encryption Key
